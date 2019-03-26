@@ -27,10 +27,18 @@ from a_star import *
 
 # setup command line argument parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('-r', default=1, type=int, choices=range(1, 5), help='number of robovacs (1 to 4)')
-parser.add_argument('-d', default=0, type=int, choices=range(0, 5), help='number of dogs (0 to 4)')
-parser.add_argument('-s', default=5, type=int, choices=range(1, 10), help='dirt level (1 to 9)')
-parser.add_argument('-t', default=5, type=int, choices=range(1, 60), help='minutes to run (1 to 60')
+parser.add_argument('-r', default=1, type=int, choices=range(1, 5),
+                    help='number of rifle warbots (1 to 4)')
+parser.add_argument('-s', default=1, type=int, choices=range(1, 5),
+                    help='number of SAW (light machine gun) warbots (1 to 4)')
+parser.add_argument('-g', default=1, type=int, choices=range(1, 5),
+                    help='number of grenadier warbots (1 to 4)')
+parser.add_argument('-u', default=1, type=int, choices=range(1, 5),
+                    help='number of UAV scouts (1 to 4)')
+parser.add_argument('-e', default=5, type=int, choices=range(1, 10),
+                    help='number of enemies (1 to 9)')
+parser.add_argument('-c', default=5, type=int, choices=range(0, 60),
+                    help='number of civilians (0 to 60)')
 args = parser.parse_args()
 
 # create grid
