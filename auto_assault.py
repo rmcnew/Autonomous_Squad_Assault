@@ -21,7 +21,7 @@ from datetime import datetime
 import pygame
 from pygame.locals import *
 
-import room
+import map
 from grid import Grid
 from a_star import *
 
@@ -45,14 +45,14 @@ args = parser.parse_args()
 grid = Grid()
 
 # generate room
-room.create_walls(grid) # such that room has odd shape
-room.create_dropoffs(grid)
-room.create_furniture(grid)
-robovacs = room.create_robovacs(grid, args.r)
-dogs = room.create_dogs(grid, args.d)
+map.create_walls(grid) # such that room has odd shape
+map.create_dropoffs(grid)
+map.create_furniture(grid)
+robovacs = map.create_robovacs(grid, args.r)
+dogs = map.create_dogs(grid, args.d)
 dirty_to_make = int(DIRTY_MAX * (args.s / 9.0))
 filthy_to_make = int(FILTHY_MAX * (args.s / 9.0))
-(dirt, filth) = room.create_dirt(grid, dirty_to_make, filthy_to_make)
+(dirt, filth) = map.create_dirt(grid, dirty_to_make, filthy_to_make)
 max_time_in_minutes = args.t
 
 
@@ -63,7 +63,7 @@ def main():
     DISPLAY_SURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT + TOP_BUFFER + BOTTOM_BUFFER))
     BASIC_FONT = pygame.font.Font(SANS_FONT, 24)
     SCORE_FONT = pygame.font.Font(SANS_FONT, 36)
-    pygame.display.set_caption(ROBOVAC)
+    pygame.display.set_caption(AUTO_ASSAULT)
     run_game()
 
 

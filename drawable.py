@@ -94,49 +94,51 @@ class Drawable(IntFlag):
     # 576460752303423488
     # 1152921504606846976
     # 2305843009213693952
-    
+
     # mission
     RALLY_POINT = 4611686018427387904
     OBJECTIVE = 9223372036854775808
 
-
-
     @property
     def color(self):
-        if self.value == 0:
+        if self.name == "EMPTY":
             return Colors.BLACK, Colors.BLACK
-        elif self.value == 1:
-            return Colors.DARK_GRAY, Colors.DARK_GRAY
-        elif self.value == 2:
-            return Colors.WHITE, Colors.WHITE
-        elif self.value == 3:
-            return Colors.PINK, Colors.PINK
-        elif self.value == 4 or self.value == 18 or self.value == 22:
-            return Colors.YELLOW, Colors.YELLOW
-        elif self.value == 5 or self.value == 19 or self.value == 23:
-            return Colors.DARK_YELLOW, Colors.DARK_YELLOW
-        elif self.value == 6 or self.value == 20 or self.value == 24:
-            return Colors.PALE_YELLOW, Colors.PALE_YELLOW
-        elif self.value == 7 or self.value == 21 or self.value == 25:
-            return Colors.DARKER_YELLOW, Colors.DARKER_YELLOW
-        elif self.value == 8:
-            return Colors.DARK_RED, Colors.DARK_RED
-        elif self.value == 9:
-            return Colors.DARK_GREEN, Colors.DARK_GREEN
-        elif self.value == 10:
-            return Colors.DARK_BLUE, Colors.DARK_BLUE
-        elif self.value == 11:
+        elif self.name.startswith("RIFLEBOT"):
+            return Colors.LAVENDER , Colors.LAVENDER
+        elif self.name.startswith("SAWBOT"):
+            return Colors.PURPLE, Colors.PURPLE
+        elif self.name.startswith("GRENADEBOT"):
             return Colors.DARK_VIOLET, Colors.DARK_VIOLET
-        elif self.value == 12 or self.value == 26 or self.value == 30:
+        elif self.name.startswith("UAV"):
+            return Colors.MAGENTA, Colors.MAGENTA
+        elif self.name.startswith("OPFOR"):
             return Colors.RED, Colors.RED
-        elif self.value == 13 or self.value == 27 or self.value == 31:
-            return Colors.GREEN, Colors.GREEN
-        elif self.value == 14 or self.value == 28 or self.value == 32:
+        elif self.name.startswith("CIV"):
+            return Colors.PINK, Colors.PINK
+        elif self.name == "BULLET":
+            return Colors.PALE_ORANGE, Colors.PALE_ORANGE
+        elif self.name == "GRENADE":
+            return Colors.ORANGE, Colors.ORANGE
+        elif self.name == "FIRE":
+            return Colors.DARK_RED, Colors.DARK_RED
+        elif self.name == "TREE":
+            return Colors.FOREST_GREEN, Colors.FOREST_GREEN
+        elif self.name == "WATER":
             return Colors.BLUE, Colors.BLUE
-        elif self.value == 15 or self.value == 29 or self.value == 33:
-            return Colors.VIOLET, Colors.VIOLET
-        elif self.value == 16:
+        elif self.name == "ROCK":
+            return Colors.DARK_GRAY, Colors.DARK_GRAY
+        elif self.name == "WALL":
+            return Colors.GRAY, Colors.GRAY
+        elif self.name == "DOOR":
+            return Colors.WHITE, Colors.WHITE
+        elif self.name == "MUD":
             return Colors.BROWN, Colors.BROWN
-        elif self.value == 17:
+        elif self.name == "HOLE":
             return Colors.DARK_BROWN, Colors.DARK_BROWN
+        elif self.name == "BRUSH":
+            return Colors.BRUSH_GREEN, Colors.BRUSH_GREEN
+        elif self.name == "RALLY_POINT":
+            return Colors.GOLD, Colors.GOLD
+        elif self.name == "OBJECTIVE":
+            return Colors.VIOLET, Colors.VIOLET
 

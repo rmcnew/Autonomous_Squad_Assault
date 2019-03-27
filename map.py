@@ -18,11 +18,9 @@ from math import fabs
 
 from shared import *
 from drawable import Drawable
-from robovac import Robovac
-from dog import Dog
 
-# room contains methods to create the elements that make up the simulated 
-# room where the robovacs operate
+# map contains methods to create the elements that make up the simulated
+# map where the autonomous infantry squad operates
 
 
 # fill a wall block

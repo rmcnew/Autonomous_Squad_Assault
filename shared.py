@@ -40,7 +40,7 @@ assert WINDOW_HEIGHT % CELL_SIZE == 0, "Window height must be a multiple of cell
 BG_COLOR = Colors.BLACK
 
 # game title
-ROBOVAC = 'Robovac'
+AUTO_ASSAULT = 'Autonomous Squad Assault'
 
 # game font
 SANS_FONT = 'freesansbold.ttf'
