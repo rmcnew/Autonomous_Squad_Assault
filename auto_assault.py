@@ -44,16 +44,22 @@ args = parser.parse_args()
 # create grid
 grid = Grid()
 
-# generate room
-map.create_walls(grid) # such that room has odd shape
-map.create_dropoffs(grid)
-map.create_furniture(grid)
-robovacs = map.create_robovacs(grid, args.r)
-dogs = map.create_dogs(grid, args.d)
-dirty_to_make = int(DIRTY_MAX * (args.s / 9.0))
-filthy_to_make = int(FILTHY_MAX * (args.s / 9.0))
-(dirt, filth) = map.create_dirt(grid, dirty_to_make, filthy_to_make)
-max_time_in_minutes = args.t
+# generate map:
+# - generate objective building
+# - put objective inside objective building
+# - generate OPFOR near objective building
+# - generate rally point
+# - generate warbots near rally point
+# - place water
+# - place mud
+# - place rocks
+# - place trees
+# - place brush
+# - place holes
+
+
+robovacs = map.create_warbots(grid, args.r)
+opfor = map.create_opfor(grid, args.d)
 
 
 def main():
@@ -108,9 +114,6 @@ def run_game():
         draw_legend()
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
-        if elapsed_minutes >= max_time_in_minutes:
-            time_left = False
-            print("Time is Up!")
     winner_index = get_winner(scores)
     show_game_over_screen(Drawable(winner_index + 12).name)
 

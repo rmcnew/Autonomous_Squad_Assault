@@ -16,12 +16,12 @@
 
 # drawable, a base class for drawable point objects
 
-from enum import IntFlag
+from enum import Enum
 
 from colors import Colors
 
 
-class Drawable(IntFlag):
+class Drawable(Enum):
     # empty
     EMPTY = 0
     # up to 6 rifle warbots (1 SL, 2 TLs, 2 RFLMs)
