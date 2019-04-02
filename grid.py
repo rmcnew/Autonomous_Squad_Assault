@@ -23,21 +23,23 @@ class Grid:
         self.width = int(WINDOW_WIDTH / CELL_SIZE)
         self.height = int(WINDOW_HEIGHT / CELL_SIZE)
         # create grid
-        self.array = numpy.zeros((self.width, self.height), numpy.int8)
+        self.array = numpy.zeros((self.width, self.height), numpy.uint64)
+        self.all_drawables = list(Drawable.__members__)
 
     def __getitem__(self, point):  # point must be a Point; returned value is a list of Drawable
         drawables_present = []
-        raw_value = self.array[point.x][point.y]
-        print("{} raw value is {}".format(point, raw_value))
-        for draw in Drawable:
-            if (draw.value & raw_value) > 0:
-                drawables_present.append(draw)
+        raw_value = int(self.array[point.x][point.y])
+        # print("{} raw value is {}".format(point, raw_value))
+        for draw in self.all_drawables:
+            if (Drawable[draw].value & raw_value) > 0:
+                drawables_present.append(Drawable[draw])
         return drawables_present
 
     def __setitem__(self, point, drawables_list):  # point must be a Point, drawables_list must be a list of Drawable
         raw_value = 0
         for draw in drawables_list:
             raw_value = raw_value | draw.value
-        print("Setting {} to {}".format(point, raw_value))
+            # print("raw_value is {}".format(raw_value))
+        # print("Setting {} to {}".format(point, raw_value))
         self.array[point.x][point.y] = raw_value
 

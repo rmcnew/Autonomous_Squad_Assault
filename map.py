@@ -36,6 +36,11 @@ from drawable import Drawable
 # - place holes
 
 def generate_objective_building(grid):
+    bottom_left = get_random_block()
+    start_x = block.x * int(grid.width / 4)
+    stop_x = (block.x + 1) * int(grid.width / 4)
+    start_y = block.y * int(grid.height / 4)
+    stop_y = (block.y + 1) * int(grid.height / 4)
 
 def create_warbots(grid, count):
     robovacs = []

@@ -59,6 +59,14 @@ def get_random_location(grid):
     return Point(random.randint(0, grid.width - 1), random.randint(0, grid.height - 1))
 
 
+def get_random_upper_location(grid):
+    return Point(random.randint(0, grid.width - 1), random.randint((grid.height/2), (3/4 * grid.height)))
+
+
+def get_random_lower_location(grid):
+    return Point(random.randint(0, grid.width - 1), random.randint(0, (grid.height/2) - 1))
+
+
 def get_random_block():
     return Point(random.randint(0, 3), random.randint(0, 3))
 
