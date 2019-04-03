@@ -50,12 +50,26 @@ class MissionMap:
         self.grid[rally_point_location] = [Drawable.RALLY_POINT]
         return rally_point_location
 
+    def generate_warbot_type(self, count, warbot_type_prefix, warbots):
+        warbot_index = 1
+        while warbot_index <= count:
+            # put bots near rally point
+            random_point = self.get_random_empty_location_near_point(self.rally_point_location, WARBOT_GENERATE_RADIUS)
+            self.grid[random_point] = [Drawable[warbot_type_prefix + str(warbot_index)]]
+            # creation of warbot instances goes here
+            warbot_index = warbot_index + 1
+        return warbots
+
     def generate_warbots(self, riflebot_count, sawbot_count, grenadebot_count, scoutbot_count):
         warbots = []
-        warbot_index = 1
-        while warbot_index <= riflebot_count:
-            # put warbot near rally point
-            warbot_index = warbot_index + 1
+        # generate riflebots
+        self.generate_warbot_type(riflebot_count, "RIFLEBOT_", warbots)
+        # generate sawbots
+        self.generate_warbot_type(sawbot_count, "SAWBOT_", warbots)
+        # generate grenadebots
+        self.generate_warbot_type(grenadebot_count, "GRENADEBOT_", warbots)
+        # generate scouts
+        self.generate_warbot_type(sawbot_count, "SCOUTBOT_", warbots)
         return warbots
 
     def generate_opfor(self, count):
@@ -63,9 +77,10 @@ class MissionMap:
         opfor_index = 1
         while opfor_index <= count:
             # put opfor near objective
-            random_point = self.get_random_location_near_point(self.objective_location, OPFOR_GENERATE_RADIUS)
+            random_point = self.get_random_empty_location_near_point(self.objective_location, OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
             self.grid[random_point] = [Drawable["OPFOR_" + str(opfor_index)]]
+            # creation of opfor instances goes here
             opfor_index = opfor_index + 1
         return opfor
 
@@ -77,6 +92,12 @@ class MissionMap:
 
     def get_random_lower_location(self):
         return Point(randint(0, self.grid.width - 1), randint((0.75 * self.grid.height),  self.grid.height - 1))
+
+    def get_random_empty_location_near_point(self, point, radius):
+        while True:
+            random_point = self.get_random_location_near_point(point, radius)
+            if self.empty(random_point):
+                return random_point
 
     def get_random_location_near_point(self, point, radius):
         while True:
@@ -92,6 +113,9 @@ class MissionMap:
 
     def on_map(self, point):
         return 0 <= point.x <= self.grid.width and 0 <= point.y <= self.grid.height
+
+    def empty(self, point):
+        return len(self.grid[point]) == 0
 
     def can_enter(self, point):
         return self.on_map(point)

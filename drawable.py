@@ -41,11 +41,11 @@ class Drawable(Enum):
     GRENADEBOT_2 = 2048
     GRENADEBOT_3 = 4096
     GRENADEBOT_4 = 8192
-    # up to 4 UAV scouts
-    UAV_1 = 16384
-    UAV_2 = 32768
-    UAV_3 = 65536
-    UAV_4 = 131072
+    # up to 4 scouts
+    SCOUTBOT_1 = 16384
+    SCOUTBOT_2 = 32768
+    SCOUTBOT_3 = 65536
+    SCOUTBOT_4 = 131072
     # up to 9 enemies
     OPFOR_1 = 262144
     OPFOR_2 = 524288
@@ -109,7 +109,7 @@ class Drawable(Enum):
             return Colors.PURPLE, Colors.PURPLE
         elif self.name.startswith("GRENADEBOT"):
             return Colors.DARK_VIOLET, Colors.DARK_VIOLET
-        elif self.name.startswith("UAV"):
+        elif self.name.startswith("SCOUTBOT"):
             return Colors.MAGENTA, Colors.MAGENTA
         elif self.name.startswith("OPFOR"):
             return Colors.RED, Colors.RED
