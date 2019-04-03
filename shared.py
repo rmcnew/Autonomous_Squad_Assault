@@ -27,7 +27,7 @@ FPS = 30
 SECONDS_PER_MINUTE = 60
 
 # game window
-TOP_BUFFER = 50
+TOP_BUFFER = 0
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 960
 BOTTOM_BUFFER = 100
@@ -50,31 +50,13 @@ SANS_FONT = 'freesansbold.ttf'
 X = 'x'
 Y = 'y'
 
+# opfor generation radius away from objective
+OPFOR_GENERATE_RADIUS = 6
+
+# warbot generation radius away from rally point
+WARBOT_GENERATE_RADIUS = 6
 
 # legend scale factor
 LEGEND_SCALE = 19
 
 
-def get_random_location(grid):
-    return Point(random.randint(0, grid.width - 1), random.randint(0, grid.height - 1))
-
-
-def get_random_upper_location(grid):
-    return Point(random.randint(0, grid.width - 1), random.randint((grid.height/2), (3/4 * grid.height)))
-
-
-def get_random_lower_location(grid):
-    return Point(random.randint(0, grid.width - 1), random.randint(0, (grid.height/2) - 1))
-
-
-def get_random_block():
-    return Point(random.randint(0, 3), random.randint(0, 3))
-
-
-def on_grid(grid, point):
-    return 0 <= point.x <= grid.width and 0 <= point.y <= grid.height
-
-
-def can_enter(grid, point):
-    return on_grid(grid, point)
-    # other checks go here

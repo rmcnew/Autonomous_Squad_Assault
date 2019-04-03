@@ -30,8 +30,14 @@ class Point:
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
-    def plus(self, direction):
+    def plus_direction(self, direction):
         return Point(self.x + direction.value[0], self.y + direction.value[1])
 
-    def minus(self, direction):
+    def minus_direction(self, direction):
         return Point(self.x - direction.value[0], self.y - direction.value[1])
+
+    def plus_vector(self, vector):
+        return Point(self.x + vector[0], self.y + vector[1])
+
+    def minus_vector(self, vector):
+        return Point(self.x - vector[0], self.y - vector[1])

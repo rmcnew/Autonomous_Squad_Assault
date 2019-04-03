@@ -21,7 +21,7 @@
 from warbot import Warbot
 
 
-class UavScout(Warbot):
+class Scoutbot(Warbot):
 
     def __init__(self, start_location, name):
         super().__init__(start_location, name)

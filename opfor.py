@@ -13,27 +13,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from direction import Direction
+from drawable import Drawable
 
-from enum import Enum
-from random import choice
 
+class Opfor:
 
-class Direction(Enum):
-    NORTH = (0, 1)
-    NORTHEAST = (1, 1)
-    EAST = (1, 0)
-    SOUTHEAST = (1, -1)
-    SOUTH = (0, -1)
-    SOUTHWEST = (-1, -1)
-    WEST = (-1, 0)
-    NORTHWEST = (-1, 1)
-
-    def to_unit_vector(self):
-        return self.value
-
-    def to_scaled_vector(self, scalar):
-        return self.value[0] * scalar, self.value[1] * scalar
-
-    @classmethod
-    def get_random(cls):
-        return cls[choice(list(cls.__members__))]
+    def __init__(self, start_location, name):
+        self.location = start_location
+        self.name = Drawable[name]
+        self.direction = Direction.EAST
+        self.action_queue = []
+        self.path = []

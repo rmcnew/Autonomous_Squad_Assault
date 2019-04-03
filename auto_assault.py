@@ -21,7 +21,7 @@ from datetime import datetime
 import pygame
 from pygame.locals import *
 
-import map
+from missionmap import MissionMap
 from grid import Grid
 from a_star import *
 
@@ -45,21 +45,7 @@ args = parser.parse_args()
 grid = Grid()
 
 # generate map:
-# - generate objective building
-# - put objective inside objective building
-# - generate OPFOR near objective building
-# - generate rally point
-# - generate warbots near rally point
-# - place water
-# - place mud
-# - place rocks
-# - place trees
-# - place brush
-# - place holes
-
-
-robovacs = map.create_warbots(grid, args.r)
-opfor = map.create_opfor(grid, args.d)
+mission_map = MissionMap(grid, args)
 
 
 def main():
@@ -92,30 +78,29 @@ def get_winner(scores):
 
 
 def run_game():
-    room_dirty = True
-    time_left = True
     start_time = datetime.now()
-    while room_dirty and time_left:  # main game loop
+    mission_complete = False
+    while not mission_complete:  # main game loop
         # check for q or Esc keypress or window close events to quit
         check_for_quit()
-        # robovacs decide and move
-        for robovac in robovacs:
-            robovac.run(grid)
+        # warbots decide and move
+        # for warbot in warbots:
+        #    warbot.run(grid)
         # move dogs
-        for dog in dogs:
-            dog.run(grid)
+        # for op in opfor:
+        #    op.run(grid)
 
         # update display
         DISPLAY_SURF.fill(BG_COLOR.value)
         draw_grid()
         # quit if the room is clean
         elapsed_minutes = int((datetime.now() - start_time).seconds / SECONDS_PER_MINUTE)
-        room_dirty, scores = draw_scores(elapsed_minutes)
-        draw_legend()
+
+        #draw_legend()
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
-    winner_index = get_winner(scores)
-    show_game_over_screen(Drawable(winner_index + 12).name)
+    #winner_index = get_winner(scores)
+    #show_game_over_screen(Drawable(winner_index + 12).name)
 
 
 def terminate():
@@ -142,19 +127,20 @@ def draw_grid():
                 pygame.draw.rect(DISPLAY_SURF, fillColor.value, inner_rect)
 
 
-def draw_scores(elapsed_minutes):
-    dirty_left, filthy_left = grid.get_dirty_counts()
-    scores = []
-    for robovac in robovacs:
-        score = int(robovac.score(dirty_left, filthy_left, elapsed_minutes))
-        scores.append(score)
-        surf = SCORE_FONT.render('Score: %s' % str(score),
-                                 True,
-                                 robovac.name.color[0].value)
-        rect = surf.get_rect()
-        rect.topleft = robovac.score_position
-        DISPLAY_SURF.blit(surf, rect)
-    return int(dirty_left + filthy_left) > 0, scores
+def draw_score(elapsed_minutes):
+    None
+    # opfor_left = get_opfor_alive_count()
+    # scores = []
+    # for robovac in robovacs:
+    #     score = int(robovac.score(dirty_left, filthy_left, elapsed_minutes))
+    #     scores.append(score)
+    #     surf = SCORE_FONT.render('Score: %s' % str(score),
+    #                              True,
+    #                              robovac.name.color[0].value)
+    #     rect = surf.get_rect()
+    #     rect.topleft = robovac.score_position
+    #     DISPLAY_SURF.blit(surf, rect)
+    # return int(dirty_left + filthy_left) > 0, scores
 
 
 def draw_legend():
