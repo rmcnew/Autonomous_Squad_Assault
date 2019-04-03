@@ -20,6 +20,7 @@ from shared import *
 from drawable import Drawable
 from direction import Direction
 from random import randint
+from math import sqrt, pow
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 
@@ -84,6 +85,10 @@ class MissionMap:
             opfor_index = opfor_index + 1
         return opfor
 
+    def generate_water(self):
+        # water generation goes here
+        None
+
     def get_random_location(self):
         return Point(randint(0, self.grid.width - 1), randint(0, self.grid.height - 1))
 
@@ -116,6 +121,9 @@ class MissionMap:
 
     def empty(self, point):
         return len(self.grid[point]) == 0
+
+    def distance(self, pointA, pointB):
+        return sqrt(pow(pointA[X] - pointB[X], 2) + pow(pointA[Y] - pointB[Y], 2))
 
     def can_enter(self, point):
         return self.on_map(point)
