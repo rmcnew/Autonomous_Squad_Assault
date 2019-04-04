@@ -14,13 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from math import fabs
-
 from shared import *
 from drawable import Drawable
 from direction import Direction
 from random import randint
 from math import sqrt, pow
+from opensimplex import OpenSimplex
+
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 
@@ -33,6 +33,7 @@ class MissionMap:
         self.opfor = self.generate_opfor(args.e)
         self.rally_point_location = self.generate_rally_point()
         self.warbots = self.generate_warbots(args.r, args.s, args.g, args.u)
+        self.generate_terrain()
         # - place water
         # - place mud
         # - place rocks
@@ -85,9 +86,29 @@ class MissionMap:
             opfor_index = opfor_index + 1
         return opfor
 
-    def generate_water(self):
-        # water generation goes here
-        None
+    def generate_terrain(self):
+        simp = OpenSimplex()
+        for x in range(self.grid.width):
+            for y in range(self.grid.height):
+                current_point = Point(x, y)
+                distance_from_objective = self.distance(self.objective_location, current_point)
+                distance_from_rally_point = self.distance(self.rally_point_location, current_point)
+                if distance_from_objective > OPFOR_GENERATE_RADIUS and \
+                   distance_from_rally_point > WARBOT_GENERATE_RADIUS:
+                    noise = simp.noise2d(x, y)  # -1.0 to 1.0, so we need to shift and scale it
+                    scaled_noise = int((noise + 1.0) * 3.0)
+                    if scaled_noise == 0:
+                        self.grid[current_point] = [Drawable.WATER]
+                    elif scaled_noise == 1:
+                        self.grid[current_point] = [Drawable.MUD]
+                    elif scaled_noise == 2:
+                        self.grid[current_point] = [Drawable.BRUSH]
+                    elif scaled_noise == 3:
+                        self.grid[current_point] = [Drawable.TREE]
+                    elif scaled_noise == 4:
+                        self.grid[current_point] = [Drawable.ROCK]
+                    elif scaled_noise == 5:
+                        self.grid[current_point] = [Drawable.HOLE]
 
     def get_random_location(self):
         return Point(randint(0, self.grid.width - 1), randint(0, self.grid.height - 1))
@@ -122,8 +143,8 @@ class MissionMap:
     def empty(self, point):
         return len(self.grid[point]) == 0
 
-    def distance(self, pointA, pointB):
-        return sqrt(pow(pointA[X] - pointB[X], 2) + pow(pointA[Y] - pointB[Y], 2))
+    def distance(self, point_a, point_b):
+        return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
 
     def can_enter(self, point):
         return self.on_map(point)
