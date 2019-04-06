@@ -1,4 +1,4 @@
+noise==1.2.2
 numpy==1.16.0
-opensimplex==0.2
 pkg-resources==0.0.0
 pygame==1.9.4

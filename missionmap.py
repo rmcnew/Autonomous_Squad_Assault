@@ -19,36 +19,84 @@ from drawable import Drawable
 from direction import Direction
 from random import randint
 from math import sqrt, pow
-from opensimplex import OpenSimplex
+from noise import pnoise3
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 
 
 class MissionMap:
+    # hash for quick lookup of occupied grid squares
+    occupied = {
+        Drawable.WATER: True,
+        Drawable.RIFLEBOT_1: True,
+        Drawable.RIFLEBOT_2: True,
+        Drawable.RIFLEBOT_3: True,
+        Drawable.RIFLEBOT_4: True,
+        Drawable.RIFLEBOT_5: True,
+        Drawable.RIFLEBOT_6: True,
+        Drawable.SAWBOT_1: True,
+        Drawable.SAWBOT_2: True,
+        Drawable.SAWBOT_3: True,
+        Drawable.SAWBOT_4: True,
+        Drawable.GRENADEBOT_1: True,
+        Drawable.GRENADEBOT_2: True,
+        Drawable.GRENADEBOT_3: True,
+        Drawable.GRENADEBOT_4: True,
+        Drawable.SCOUTBOT_1: True,
+        Drawable.SCOUTBOT_2: True,
+        Drawable.SCOUTBOT_3: True,
+        Drawable.SCOUTBOT_4: True,
+        Drawable.OPFOR_1: True,
+        Drawable.OPFOR_2: True,
+        Drawable.OPFOR_3: True,
+        Drawable.OPFOR_4: True,
+        Drawable.OPFOR_5: True,
+        Drawable.OPFOR_6: True,
+        Drawable.OPFOR_7: True,
+        Drawable.OPFOR_8: True,
+        Drawable.OPFOR_9: True,
+        Drawable.CIV_1: True,
+        Drawable.CIV_2: True,
+        Drawable.CIV_3: True,
+        Drawable.CIV_4: True,
+        Drawable.CIV_5: True,
+        Drawable.CIV_6: True,
+        Drawable.CIV_7: True,
+        Drawable.CIV_8: True,
+        Drawable.CIV_9: True,
+        Drawable.CIV_10: True,
+        Drawable.CIV_11: True,
+        Drawable.CIV_12: True,
+        Drawable.CIV_13: True,
+        Drawable.CIV_14: True,
+        Drawable.CIV_15: True,
+        Drawable.CIV_16: True,
+        Drawable.CIV_17: True,
+        Drawable.CIV_18: True,
+        Drawable.CIV_19: True,
+        Drawable.CIV_20: True
+    }
 
     def __init__(self, grid, args):
         self.grid = grid
+        # randomly generate terrain
+        self.generate_terrain(randint(100, 1000))
+        # generate objective and opfor
         self.objective_location = self.generate_objective()
         self.opfor = self.generate_opfor(args.e)
+        # generate rally point and warbots
         self.rally_point_location = self.generate_rally_point()
         self.warbots = self.generate_warbots(args.r, args.s, args.g, args.u)
-        self.generate_terrain()
-        # - place water
-        # - place mud
-        # - place rocks
-        # - place trees
-        # - place brush
-        # - place holes
-        # - place civilians
+        # generate civilians
 
     def generate_objective(self):
-        objective_location = self.get_random_upper_location()
+        objective_location = self.get_random_upper_location_on_dirt()
         self.grid[objective_location] = [Drawable.OBJECTIVE]
         return objective_location
 
     def generate_rally_point(self):
-        rally_point_location = self.get_random_lower_location()
+        rally_point_location = self.get_random_lower_location_on_dirt()
         self.grid[rally_point_location] = [Drawable.RALLY_POINT]
         return rally_point_location
 
@@ -56,7 +104,7 @@ class MissionMap:
         warbot_index = 1
         while warbot_index <= count:
             # put bots near rally point
-            random_point = self.get_random_empty_location_near_point(self.rally_point_location, WARBOT_GENERATE_RADIUS)
+            random_point = self.get_random_unoccupied_location_near_point(self.rally_point_location, WARBOT_GENERATE_RADIUS)
             self.grid[random_point] = [Drawable[warbot_type_prefix + str(warbot_index)]]
             # creation of warbot instances goes here
             warbot_index = warbot_index + 1
@@ -79,50 +127,69 @@ class MissionMap:
         opfor_index = 1
         while opfor_index <= count:
             # put opfor near objective
-            random_point = self.get_random_empty_location_near_point(self.objective_location, OPFOR_GENERATE_RADIUS)
+            random_point = self.get_random_unoccupied_location_near_point(self.objective_location, OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
             self.grid[random_point] = [Drawable["OPFOR_" + str(opfor_index)]]
             # creation of opfor instances goes here
             opfor_index = opfor_index + 1
         return opfor
 
-    def generate_terrain(self):
-        simp = OpenSimplex()
+    def generate_terrain(self, seed):
+        scale = 100.0
+        octaves = 6
+        persistence = 0.5
+        lacunarity = 2.0
         for x in range(self.grid.width):
             for y in range(self.grid.height):
                 current_point = Point(x, y)
-                distance_from_objective = self.distance(self.objective_location, current_point)
-                distance_from_rally_point = self.distance(self.rally_point_location, current_point)
-                if distance_from_objective > OPFOR_GENERATE_RADIUS and \
-                   distance_from_rally_point > WARBOT_GENERATE_RADIUS:
-                    noise = simp.noise2d(x, y)  # -1.0 to 1.0, so we need to shift and scale it
-                    scaled_noise = int((noise + 1.0) * 3.0)
-                    if scaled_noise == 0:
-                        self.grid[current_point] = [Drawable.WATER]
-                    elif scaled_noise == 1:
-                        self.grid[current_point] = [Drawable.MUD]
-                    elif scaled_noise == 2:
-                        self.grid[current_point] = [Drawable.BRUSH]
-                    elif scaled_noise == 3:
-                        self.grid[current_point] = [Drawable.TREE]
-                    elif scaled_noise == 4:
-                        self.grid[current_point] = [Drawable.ROCK]
-                    elif scaled_noise == 5:
-                        self.grid[current_point] = [Drawable.HOLE]
+                noise = pnoise3(
+                    x/scale,
+                    y/scale,
+                    seed/scale,
+                    octaves=octaves,
+                    persistence=persistence,
+                    lacunarity=lacunarity,
+                    repeatx=self.grid.width,
+                    repeaty=self.grid.height,
+                    base=0)
+                if noise < -0.35:
+                    self.grid[current_point] = [Drawable.WATER]
+                elif noise < -0.20:
+                    self.grid[current_point] = [Drawable.MUD]
+                elif noise < 0.1:
+                    self.grid[current_point] = [Drawable.DIRT]
+                elif noise < 0.45:
+                    self.grid[current_point] = [Drawable.GRASS]
+                elif noise < 0.75:
+                    self.grid[current_point] = [Drawable.TREE]
+                else:
+                    self.grid[current_point] = [Drawable.ROCK]
 
     def get_random_location(self):
         return Point(randint(0, self.grid.width - 1), randint(0, self.grid.height - 1))
 
+    def get_random_upper_location_on_dirt(self):
+        while True:
+            random_point = self.get_random_upper_location()
+            if Drawable.DIRT in self.grid[random_point]:
+                return random_point
+
     def get_random_upper_location(self):
         return Point(randint(0, self.grid.width - 1), randint(0, (0.25 * self.grid.height) - 1))
+
+    def get_random_lower_location_on_dirt(self):
+        while True:
+            random_point = self.get_random_lower_location()
+            if Drawable.DIRT in self.grid[random_point]:
+                return random_point
 
     def get_random_lower_location(self):
         return Point(randint(0, self.grid.width - 1), randint((0.75 * self.grid.height),  self.grid.height - 1))
 
-    def get_random_empty_location_near_point(self, point, radius):
+    def get_random_unoccupied_location_near_point(self, point, radius):
         while True:
             random_point = self.get_random_location_near_point(point, radius)
-            if self.empty(random_point):
+            if not self.is_occupied(random_point):
                 return random_point
 
     def get_random_location_near_point(self, point, radius):
@@ -134,11 +201,14 @@ class MissionMap:
             if self.on_map(random_point):
                 return random_point
 
-    def get_random_block(self):
-        return Point(randint(0, 3), randint(0, 3))
+    def is_occupied(self, point):
+        for drawable in self.grid[point]:
+            if drawable in MissionMap.occupied:
+                return True
+        return False
 
     def on_map(self, point):
-        return 0 <= point.x <= self.grid.width and 0 <= point.y <= self.grid.height
+        return 0 <= point.x < self.grid.width and 0 <= point.y < self.grid.height
 
     def empty(self, point):
         return len(self.grid[point]) == 0

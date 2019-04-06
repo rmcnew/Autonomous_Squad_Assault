@@ -82,14 +82,14 @@ class Drawable(Enum):
     GRENADE = 281474976710656
     FIRE = 562949953421312
     # terrain
-    TREE = 1125899906842624     # slow maneuver, but provides cover and concealment
-    WATER = 2251799813685248    # impassable
-    ROCK = 4503599627370496     # slow maneuver, some cover
-    WALL = 9007199254740992     # impassable
-    DOOR = 18014398509481984    # must be opened
-    MUD = 36028797018963968     # very slow maneuver, no cover
-    HOLE = 72057594037927936    # impassable
-    BRUSH = 144115188075855872  # concealment (no cover)
+    WATER = 1125899906842624
+    MUD = 2251799813685248
+    DIRT = 4503599627370496
+    GRASS = 9007199254740992
+    TREE = 18014398509481984
+    ROCK = 36028797018963968
+    DOOR = 72057594037927936
+    WALL = 144115188075855872
     # 288230376151711744
     # 576460752303423488
     # 1152921504606846976
@@ -131,11 +131,11 @@ class Drawable(Enum):
             return Colors.GRAY, Colors.GRAY
         elif self.name == "DOOR":
             return Colors.WHITE, Colors.WHITE
-        elif self.name == "MUD":
+        elif self.name == "DIRT":
             return Colors.BROWN, Colors.BROWN
-        elif self.name == "HOLE":
+        elif self.name == "MUD":
             return Colors.DARK_BROWN, Colors.DARK_BROWN
-        elif self.name == "BRUSH":
+        elif self.name == "GRASS":
             return Colors.BRUSH_GREEN, Colors.BRUSH_GREEN
         elif self.name == "RALLY_POINT":
             return Colors.GOLD, Colors.GOLD
