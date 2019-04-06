@@ -14,15 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# constants for pygame
 
-# shared constants and functions
-import random
 from colors import Colors
-from drawable import Drawable
 
 # frames per second
-from point import Point
-
 FPS = 30
 SECONDS_PER_MINUTE = 60
 
@@ -46,17 +42,5 @@ AUTO_ASSAULT = 'Autonomous Squad Assault'
 # game font
 SANS_FONT = 'freesansbold.ttf'
 
-# coordinates
-X = 'x'
-Y = 'y'
-
-# opfor generation radius away from objective
-OPFOR_GENERATE_RADIUS = 6
-
-# warbot generation radius away from rally point
-WARBOT_GENERATE_RADIUS = 6
-
 # legend scale factor
 LEGEND_SCALE = 19
-
-

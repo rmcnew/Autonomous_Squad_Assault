@@ -18,10 +18,10 @@
 # and reconnoiters the objective location and disposition of opposing
 # forces at the objective site.
 
-from warbot import Warbot
+from warbot.warbot import Warbot
 
 
-class Scoutbot(Warbot):
+class Grenadebot(Warbot):
 
     def __init__(self, start_location, name):
         super().__init__(start_location, name)

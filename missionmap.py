@@ -17,9 +17,12 @@
 from shared import *
 from drawable import Drawable
 from direction import Direction
+from point import Point
 from random import randint
 from math import sqrt, pow
 from noise import pnoise3
+
+from grid import Grid
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
@@ -78,8 +81,20 @@ class MissionMap:
         Drawable.CIV_20: True
     }
 
-    def __init__(self, grid, args):
-        self.grid = grid
+    # opfor generation radius away from objective
+    OPFOR_GENERATE_RADIUS = 6  # type: int
+
+    # opfor vision around self
+    OPFOR_VISION_DISTANCE = 8  # type: int
+
+    # warbot generation radius away from rally point
+    WARBOT_GENERATE_RADIUS = 6  # type: int
+
+    # warbot vision around self  (better than human due to high resolution camera)
+    WARBOT_VISION_DISTANCE = 12  # type: int
+
+    def __init__(self, args):
+        self.grid = Grid()
         # randomly generate terrain
         self.generate_terrain(randint(100, 1000))
         # generate objective and opfor
@@ -104,7 +119,9 @@ class MissionMap:
         warbot_index = 1
         while warbot_index <= count:
             # put bots near rally point
-            random_point = self.get_random_unoccupied_location_near_point(self.rally_point_location, WARBOT_GENERATE_RADIUS)
+            random_point = self.get_random_unoccupied_location_near_point(
+                self.rally_point_location,
+                MissionMap.WARBOT_GENERATE_RADIUS)
             self.grid[random_point] = [Drawable[warbot_type_prefix + str(warbot_index)]]
             # creation of warbot instances goes here
             warbot_index = warbot_index + 1
@@ -127,7 +144,9 @@ class MissionMap:
         opfor_index = 1
         while opfor_index <= count:
             # put opfor near objective
-            random_point = self.get_random_unoccupied_location_near_point(self.objective_location, OPFOR_GENERATE_RADIUS)
+            random_point = self.get_random_unoccupied_location_near_point(
+                self.objective_location,
+                MissionMap.OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
             self.grid[random_point] = [Drawable["OPFOR_" + str(opfor_index)]]
             # creation of opfor instances goes here
@@ -219,3 +238,6 @@ class MissionMap:
     def can_enter(self, point):
         return self.on_map(point)
         # other checks go here
+
+    def get_visible_map_around_point(self, point, distance):
+        visible_map = []

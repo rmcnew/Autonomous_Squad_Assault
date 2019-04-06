@@ -15,14 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
+import logging
 import sys
+from multiprocessing import Process, Queue
+from os import getpid
 from datetime import datetime
 
+from pygame_constants import *
 import pygame
 from pygame.locals import *
 
 from missionmap import MissionMap
-from grid import Grid
 from a_star import *
 
 # setup command line argument parsing
@@ -41,14 +44,15 @@ parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
                     help='number of civilians (0 to 20)')
 args = parser.parse_args()
 
-# create grid
-grid = Grid()
-
 # generate map:
-mission_map = MissionMap(grid, args)
+mission_map = MissionMap(args)
 
 
 def main():
+    log_file = "{}-{}.log".format("Auto_Assault", getpid())
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
+                        filename=log_file,
+                        level=logging.INFO)
     global FPS_CLOCK, DISPLAY_SURF, BASIC_FONT, SCORE_FONT
     pygame.init()
     FPS_CLOCK = pygame.time.Clock()
@@ -115,10 +119,10 @@ def draw_grid():
     for y in range(TOP_BUFFER, WINDOW_HEIGHT, CELL_SIZE):  # draw horizontal lines
         pygame.draw.line(DISPLAY_SURF, Colors.DARK_GRAY.value, (0, y), (WINDOW_WIDTH, y))
     # draw grid objects
-    for x in range(0, grid.width):
-        for y in range(0, grid.height):
-            if grid.array[x][y] != 0:  # use the internal array directly for speed
-                (lineColor, fillColor) = Drawable(grid.array[x][y]).color
+    for x in range(0, map.grid.width):
+        for y in range(0, mission_map.grid.height):
+            if mission_map.grid.array[x][y] != 0:  # use the internal array directly for speed
+                (lineColor, fillColor) = Drawable(mission_map.grid.array[x][y]).color
                 cell_x = x * CELL_SIZE
                 cell_y = y * CELL_SIZE + TOP_BUFFER
                 rect = pygame.Rect(cell_x, cell_y, CELL_SIZE, CELL_SIZE)

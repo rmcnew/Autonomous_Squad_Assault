@@ -24,12 +24,15 @@ from shared import *
 
 
 class Warbot:
+    WARBOT_COMM_PORT = 2600
+
     def __init__(self, start_location, name):
         self.location = start_location
         self.name = Drawable[name]
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
+        self.visible_map = None
 
     def next_action_from_path(self, current_point, next_point):
         delta_x = next_point.x - current_point.x
@@ -129,22 +132,22 @@ class Warbot:
                 getattr(self, "turn_{}".format(direction.name.lower()))()
             current_index = current_index + 1
 
-    def move_forward(self, grid):
-        next_location = self.location.plus(self.direction)
-        if can_enter(grid, next_location):
-            grid.enter(next_location, self.name)
-            grid.exit(self.location, self.name)
-            # update internal location
-            self.location = next_location
-        else:  # cannot move up, back off and change direction
-            self.action_queue.insert(0, Action.TURN_LEFT)
-
-    def move_backward(self, grid):
-        next_location = self.location.minus(self.direction)
-        if can_enter(grid, next_location):
-            grid.enter(next_location, self.name)
-            grid.exit(self.location, self.name)
-            self.location = next_location
-        else:  # cannot move up, back off and change direction
-            self.action_queue.insert(0, Action.TURN_LEFT)
+    # def move_forward(self, grid):
+    #     next_location = self.location.plus(self.direction)
+    #     if can_enter(grid, next_location):
+    #         grid.enter(next_location, self.name)
+    #         grid.exit(self.location, self.name)
+    #         # update internal location
+    #         self.location = next_location
+    #     else:  # cannot move up, back off and change direction
+    #         self.action_queue.insert(0, Action.TURN_LEFT)
+    #
+    # def move_backward(self, grid):
+    #     next_location = self.location.minus(self.direction)
+    #     if can_enter(grid, next_location):
+    #         grid.enter(next_location, self.name)
+    #         grid.exit(self.location, self.name)
+    #         self.location = next_location
+    #     else:  # cannot move up, back off and change direction
+    #         self.action_queue.insert(0, Action.TURN_LEFT)
 

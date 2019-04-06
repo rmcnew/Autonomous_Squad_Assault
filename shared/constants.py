@@ -14,15 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# UAV scout is a flying, autonomous robot that performs surveillance
-# and reconnoiters the objective location and disposition of opposing
-# forces at the objective site.
+# shared constants
 
-from warbot import Warbot
+# coordinates
+X = 'x'
+Y = 'y'
 
-
-class Riflebot(Warbot):
-
-    def __init__(self, start_location, name):
-        super().__init__(start_location, name)
-
+# message strings
+ACTION = "action"
+ELECTION_BEGIN = "election_begin"
+ELECTION_ID_DECLARE = "election_id_declare"
+ELECTION_COMPARE = "election_compare"
+ELECTION_END = "election_end"
+ELECTION_WINNER_WAIT_CYCLES = 4
+ID = "id"
+LOSER_ID = "loser_id"
+MESSAGE_TYPE = "message_type"
+TAKE_TURN = "take_turn"
+TIMESTAMP = "timestamp"
+WINNER_ID = "winner_id"
+YOUR_TURN = "your_turn"
