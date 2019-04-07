@@ -14,17 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy
-from shared import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
+from pygame_constants import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
 from drawable import Drawable
 
 
 class Grid:
     def __init__(self):
+        self.all_drawables = list(Drawable.__members__)
+        self.width = None
+        self.height = None
+        self.array = None
+
+    def default_grid(self):
+        """create the default grid used for the simulation"""
         self.width = int(WINDOW_WIDTH / CELL_SIZE)
         self.height = int(WINDOW_HEIGHT / CELL_SIZE)
         # create grid
         self.array = numpy.zeros((self.width, self.height), numpy.uint64)
-        self.all_drawables = list(Drawable.__members__)
+
+    def import_array(self, array):
+        """import an array to represent a portion of the map visible to a warbot or opfor"""
+        self.array = array
+        self.width = array.shape[0]
+        self.height = array.shape[1]
 
     def __getitem__(self, point):  # point must be a Point; returned value is a list of Drawable
         drawables_present = []

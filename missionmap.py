@@ -93,8 +93,16 @@ class MissionMap:
     # warbot vision around self  (better than human due to high resolution camera)
     WARBOT_VISION_DISTANCE = 12  # type: int
 
-    def __init__(self, args):
-        self.grid = Grid()
+    def __init__(self, grid=Grid()):
+        self.grid = grid
+        self.objective_location = None
+        self.opfor = None
+        self.rally_point_location = None
+        self.warbots = None
+
+    def populate_map(self, args):
+        # initialize the default grid
+        self.grid.default_grid()
         # randomly generate terrain
         self.generate_terrain(randint(100, 1000))
         # generate objective and opfor
@@ -239,5 +247,26 @@ class MissionMap:
         return self.on_map(point)
         # other checks go here
 
+    def normalize_point(self, point):
+        point_x = point.x
+        if point_x < 0:
+            point_x = 0
+        elif point_x >= self.grid.width:
+            point_x = self.grid.width - 1
+
+        point_y = point.y
+        if point_y < 0:
+            point_y = 0
+        elif point_y >= self.grid.height:
+            point_y = self.grid.height - 1
+        # only create a new point if needed
+        if point_x == point.x and point_y == point.y:
+            return point
+        else:  # otherwise return the existing point
+            return Point(point_x, point_y)
+
     def get_visible_map_around_point(self, point, distance):
-        visible_map = []
+        minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
+        plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
+        print("minus is {}, plus is {}".format(minus, plus))
+        return self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1]

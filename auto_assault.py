@@ -17,16 +17,15 @@
 import argparse
 import logging
 import sys
-from multiprocessing import Process, Queue
-from os import getpid
 from datetime import datetime
-
-from pygame_constants import *
+from os import getpid
+from point import Point
 import pygame
 from pygame.locals import *
 
+from drawable import Drawable
 from missionmap import MissionMap
-from a_star import *
+from pygame_constants import *
 
 # setup command line argument parsing
 parser = argparse.ArgumentParser()
@@ -45,14 +44,15 @@ parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
 args = parser.parse_args()
 
 # generate map:
-mission_map = MissionMap(args)
+mission_map = MissionMap()
+mission_map.populate_map(args)
 
 
 def main():
-    log_file = "{}-{}.log".format("Auto_Assault", getpid())
-    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
-                        filename=log_file,
-                        level=logging.INFO)
+    # log_file = "{}-{}.log".format("Auto_Assault", getpid())
+    # logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
+    #                     filename=log_file,
+    #                     level=logging.INFO)
     global FPS_CLOCK, DISPLAY_SURF, BASIC_FONT, SCORE_FONT
     pygame.init()
     FPS_CLOCK = pygame.time.Clock()
@@ -119,7 +119,7 @@ def draw_grid():
     for y in range(TOP_BUFFER, WINDOW_HEIGHT, CELL_SIZE):  # draw horizontal lines
         pygame.draw.line(DISPLAY_SURF, Colors.DARK_GRAY.value, (0, y), (WINDOW_WIDTH, y))
     # draw grid objects
-    for x in range(0, map.grid.width):
+    for x in range(0, mission_map.grid.width):
         for y in range(0, mission_map.grid.height):
             if mission_map.grid.array[x][y] != 0:  # use the internal array directly for speed
                 (lineColor, fillColor) = Drawable(mission_map.grid.array[x][y]).color
