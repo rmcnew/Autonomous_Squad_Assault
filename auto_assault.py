@@ -27,28 +27,30 @@ from drawable import Drawable
 from missionmap import MissionMap
 from pygame_constants import *
 
-# setup command line argument parsing
-parser = argparse.ArgumentParser()
-parser.add_argument('-r', default=5, type=int, choices=range(1, 7),
-                    help='number of rifle warbots (1 to 6)')
-parser.add_argument('-s', default=2, type=int, choices=range(1, 5),
-                    help='number of SAW (light machine gun) warbots (1 to 4)')
-parser.add_argument('-g', default=2, type=int, choices=range(1, 5),
-                    help='number of grenadier warbots (1 to 4)')
-parser.add_argument('-u', default=2, type=int, choices=range(1, 5),
-                    help='number of UAV scouts (1 to 4)')
-parser.add_argument('-e', default=5, type=int, choices=range(1, 10),
-                    help='number of enemies (1 to 9)')
-parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
-                    help='number of civilians (0 to 20)')
-args = parser.parse_args()
-
-# generate map:
-mission_map = MissionMap()
-mission_map.populate_map(args)
+def parse_arguments():
+    # setup command line argument parsing
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', default=5, type=int, choices=range(1, 7),
+                        help='number of rifle warbots (1 to 6)')
+    parser.add_argument('-s', default=2, type=int, choices=range(1, 5),
+                        help='number of SAW (light machine gun) warbots (1 to 4)')
+    parser.add_argument('-g', default=2, type=int, choices=range(1, 5),
+                        help='number of grenadier warbots (1 to 4)')
+    parser.add_argument('-u', default=2, type=int, choices=range(1, 5),
+                        help='number of UAV scouts (1 to 4)')
+    parser.add_argument('-e', default=5, type=int, choices=range(1, 10),
+                        help='number of enemies (1 to 9)')
+    parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
+                        help='number of civilians (0 to 20)')
+    return parser.parse_args()
 
 
 def main():
+    args = parse_arguments()
+    # generate map:
+    mission_map = MissionMap()
+    mission_map.populate_map(args)
+
     # log_file = "{}-{}.log".format("Auto_Assault", getpid())
     # logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
     #                     filename=log_file,

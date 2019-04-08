@@ -96,9 +96,10 @@ class MissionMap:
     def __init__(self, grid=Grid()):
         self.grid = grid
         self.objective_location = None
-        self.opfor = None
+        self.opfor_locations = None
         self.rally_point_location = None
-        self.warbots = None
+        self.warbots_locations = None
+        self.civilian_locations = None
 
     def populate_map(self, args):
         # initialize the default grid
@@ -107,11 +108,13 @@ class MissionMap:
         self.generate_terrain(randint(100, 1000))
         # generate objective and opfor
         self.objective_location = self.generate_objective()
-        self.opfor = self.generate_opfor(args.e)
+        self.opfor_locations = self.generate_opfor(args.e)
         # generate rally point and warbots
         self.rally_point_location = self.generate_rally_point()
-        self.warbots = self.generate_warbots(args.r, args.s, args.g, args.u)
+        self.warbot_locations = self.generate_warbots(args.r, args.s, args.g, args.u)
         # generate civilians
+        self.civilian_locations = self.generate_civilians(args.c)
+        return self.warbot_locations, self.opfor_locations, self.civilian_locations
 
     def generate_objective(self):
         objective_location = self.get_random_upper_location_on_dirt()
@@ -136,19 +139,19 @@ class MissionMap:
         return warbots
 
     def generate_warbots(self, riflebot_count, sawbot_count, grenadebot_count, scoutbot_count):
-        warbots = []
+        warbot_locations = []
         # generate riflebots
-        self.generate_warbot_type(riflebot_count, "RIFLEBOT_", warbots)
+        self.generate_warbot_type(riflebot_count, "RIFLEBOT_", warbot_locations)
         # generate sawbots
-        self.generate_warbot_type(sawbot_count, "SAWBOT_", warbots)
+        self.generate_warbot_type(sawbot_count, "SAWBOT_", warbot_locations)
         # generate grenadebots
-        self.generate_warbot_type(grenadebot_count, "GRENADEBOT_", warbots)
+        self.generate_warbot_type(grenadebot_count, "GRENADEBOT_", warbot_locations)
         # generate scouts
-        self.generate_warbot_type(sawbot_count, "SCOUTBOT_", warbots)
-        return warbots
+        self.generate_warbot_type(sawbot_count, "SCOUTBOT_", warbot_locations)
+        return warbot_locations
 
     def generate_opfor(self, count):
-        opfor = []
+        opfor_locations = []
         opfor_index = 1
         while opfor_index <= count:
             # put opfor near objective
@@ -160,6 +163,9 @@ class MissionMap:
             # creation of opfor instances goes here
             opfor_index = opfor_index + 1
         return opfor
+
+    def generate_civilians(self, count):
+
 
     def generate_terrain(self, seed):
         scale = 100.0
