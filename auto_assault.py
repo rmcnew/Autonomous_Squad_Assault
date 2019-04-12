@@ -27,19 +27,14 @@ from drawable import Drawable
 from missionmap import MissionMap
 from pygame_constants import *
 
+
 def parse_arguments():
     # setup command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', default=5, type=int, choices=range(1, 7),
-                        help='number of rifle warbots (1 to 6)')
-    parser.add_argument('-s', default=2, type=int, choices=range(1, 5),
-                        help='number of SAW (light machine gun) warbots (1 to 4)')
-    parser.add_argument('-g', default=2, type=int, choices=range(1, 5),
-                        help='number of grenadier warbots (1 to 4)')
-    parser.add_argument('-u', default=2, type=int, choices=range(1, 5),
-                        help='number of UAV scouts (1 to 4)')
-    parser.add_argument('-e', default=5, type=int, choices=range(1, 10),
-                        help='number of enemies (1 to 9)')
+    parser.add_argument('-r', default=5, type=int, choices=range(1, 12),
+                        help='number of rifle warbots (1 to 11)')
+    parser.add_argument('-e', default=5, type=int, choices=range(1, 12),
+                        help='number of enemies (1 to 11)')
     parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
                         help='number of civilians (0 to 20)')
     return parser.parse_args()
@@ -62,7 +57,7 @@ def main():
     BASIC_FONT = pygame.font.Font(SANS_FONT, 24)
     SCORE_FONT = pygame.font.Font(SANS_FONT, 36)
     pygame.display.set_caption(AUTO_ASSAULT)
-    run_game()
+    run_game(mission_map)
 
 
 def check_for_quit():
@@ -83,7 +78,7 @@ def get_winner(scores):
     return winner_index
 
 
-def run_game():
+def run_game(mission_map):
     start_time = datetime.now()
     mission_complete = False
     while not mission_complete:  # main game loop
@@ -98,7 +93,7 @@ def run_game():
 
         # update display
         DISPLAY_SURF.fill(BG_COLOR.value)
-        draw_grid()
+        draw_grid(mission_map)
         # quit if the room is clean
         elapsed_minutes = int((datetime.now() - start_time).seconds / SECONDS_PER_MINUTE)
 
@@ -114,7 +109,7 @@ def terminate():
     sys.exit()
 
 
-def draw_grid():
+def draw_grid(mission_map):
     # draw gridlines
     for x in range(0, WINDOW_WIDTH, CELL_SIZE):  # draw vertical lines
         pygame.draw.line(DISPLAY_SURF, Colors.DARK_GRAY.value, (x, TOP_BUFFER), (x, WINDOW_HEIGHT + TOP_BUFFER))

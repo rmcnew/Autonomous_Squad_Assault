@@ -24,72 +24,70 @@ from colors import Colors
 class Drawable(Enum):
     # empty
     EMPTY = 0
-    # up to 6 rifle warbots (1 SL, 2 TLs, 2 RFLMs)
-    RIFLEBOT_1 = 1
-    RIFLEBOT_2 = 2
-    RIFLEBOT_3 = 4
-    RIFLEBOT_4 = 8
-    RIFLEBOT_5 = 16
-    RIFLEBOT_6 = 32
-    # up to 4 SAW warbots
-    SAWBOT_1 = 64
-    SAWBOT_2 = 128
-    SAWBOT_3 = 256
-    SAWBOT_4 = 512
-    # up to 4 grenadier warbots
-    GRENADEBOT_1 = 1024
-    GRENADEBOT_2 = 2048
-    GRENADEBOT_3 = 4096
-    GRENADEBOT_4 = 8192
-    # up to 4 scouts
-    SCOUTBOT_1 = 16384
-    SCOUTBOT_2 = 32768
-    SCOUTBOT_3 = 65536
-    SCOUTBOT_4 = 131072
-    # up to 9 enemies
-    OPFOR_1 = 262144
-    OPFOR_2 = 524288
-    OPFOR_3 = 1048576
-    OPFOR_4 = 2097152
-    OPFOR_5 = 4194304
-    OPFOR_6 = 8388608
-    OPFOR_7 = 16777216
-    OPFOR_8 = 33554432
-    OPFOR_9 = 67108864
+    # up to 11 warbots (1 SL, 2 TLs, 8 RFLMs)
+    WARBOT_1 = 1
+    WARBOT_2 = 2
+    WARBOT_3 = 4
+    WARBOT_4 = 8
+    WARBOT_5 = 16
+    WARBOT_6 = 32
+    WARBOT_7 = 64
+    WARBOT_8 = 128
+    WARBOT_9 = 256
+    WARBOT_10 = 512
+    WARBOT_11 = 1024
+    # up to 11 enemies
+    OPFOR_1 = 2048
+    OPFOR_2 = 4096
+    OPFOR_3 = 8192
+    OPFOR_4 = 16384
+    OPFOR_5 = 32768
+    OPFOR_6 = 65536
+    OPFOR_7 = 131072
+    OPFOR_8 = 262144
+    OPFOR_9 = 524288
+    OPFOR_10 = 1048576
+    OPFOR_11 = 2097152
     # up to 20 civilians
-    CIV_1 = 134217728
-    CIV_2 = 268435456
-    CIV_3 = 536870912
-    CIV_4 = 1073741824
-    CIV_5 = 2147483648
-    CIV_6 = 4294967296
-    CIV_7 = 8589934592
-    CIV_8 = 17179869184
-    CIV_9 = 34359738368
-    CIV_10 = 68719476736
-    CIV_11 = 137438953472
-    CIV_12 = 274877906944
-    CIV_13 = 549755813888
-    CIV_14 = 1099511627776
-    CIV_15 = 2199023255552
-    CIV_16 = 4398046511104
-    CIV_17 = 8796093022208
-    CIV_18 = 17592186044416
-    CIV_19 = 35184372088832
-    CIV_20 = 70368744177664
+    CIV_1 = 4194304
+    CIV_2 = 8388608
+    CIV_3 = 16777216
+    CIV_4 = 33554432
+    CIV_5 = 67108864
+    CIV_6 = 134217728
+    CIV_7 = 268435456
+    CIV_8 = 536870912
+    CIV_9 = 1073741824
+    CIV_10 = 2147483648
+    CIV_11 = 4294967296
+    CIV_12 = 8589934592
+    CIV_13 = 17179869184
+    CIV_14 = 34359738368
+    CIV_15 = 68719476736
+    CIV_16 = 137438953472
+    CIV_17 = 274877906944
+    CIV_18 = 549755813888
+    CIV_19 = 1099511627776
+    CIV_20 = 2199023255552
     # weapons
-    BULLET = 140737488355328
-    GRENADE = 281474976710656
-    FIRE = 562949953421312
+    BULLET = 4398046511104
+    GRENADE = 8796093022208
+    FIRE = 17592186044416
     # terrain
-    WATER = 1125899906842624
-    MUD = 2251799813685248
-    DIRT = 4503599627370496
-    GRASS = 9007199254740992
-    TREE = 18014398509481984
-    ROCK = 36028797018963968
-    DOOR = 72057594037927936
-    WALL = 144115188075855872
+    WATER = 35184372088832
+    MUD = 70368744177664
+    DIRT = 140737488355328
+    GRASS = 281474976710656
+    TREE = 562949953421312
+    ROCK = 1125899906842624
+    DOOR = 2251799813685248
+    WALL = 4503599627370496
+    # Not used
+    # 9007199254740992
+    # 18014398509481984
+    # 36028797018963968
+    # 72057594037927936
+    # 144115188075855872
     # 288230376151711744
     # 576460752303423488
     # 1152921504606846976
@@ -103,14 +101,8 @@ class Drawable(Enum):
     def color(self):
         if self.name == "EMPTY":
             return Colors.BLACK, Colors.BLACK
-        elif self.name.startswith("RIFLEBOT"):
-            return Colors.LAVENDER , Colors.LAVENDER
-        elif self.name.startswith("SAWBOT"):
+        elif self.name.startswith("WARBOT"):
             return Colors.PURPLE, Colors.PURPLE
-        elif self.name.startswith("GRENADEBOT"):
-            return Colors.DARK_VIOLET, Colors.DARK_VIOLET
-        elif self.name.startswith("SCOUTBOT"):
-            return Colors.MAGENTA, Colors.MAGENTA
         elif self.name.startswith("OPFOR"):
             return Colors.RED, Colors.RED
         elif self.name.startswith("CIV"):

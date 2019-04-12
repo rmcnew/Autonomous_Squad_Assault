@@ -31,25 +31,17 @@ from grid import Grid
 class MissionMap:
     # hash for quick lookup of occupied grid squares
     occupied = {
-        Drawable.WATER: True,
-        Drawable.RIFLEBOT_1: True,
-        Drawable.RIFLEBOT_2: True,
-        Drawable.RIFLEBOT_3: True,
-        Drawable.RIFLEBOT_4: True,
-        Drawable.RIFLEBOT_5: True,
-        Drawable.RIFLEBOT_6: True,
-        Drawable.SAWBOT_1: True,
-        Drawable.SAWBOT_2: True,
-        Drawable.SAWBOT_3: True,
-        Drawable.SAWBOT_4: True,
-        Drawable.GRENADEBOT_1: True,
-        Drawable.GRENADEBOT_2: True,
-        Drawable.GRENADEBOT_3: True,
-        Drawable.GRENADEBOT_4: True,
-        Drawable.SCOUTBOT_1: True,
-        Drawable.SCOUTBOT_2: True,
-        Drawable.SCOUTBOT_3: True,
-        Drawable.SCOUTBOT_4: True,
+        Drawable.WARBOT_1: True,
+        Drawable.WARBOT_2: True,
+        Drawable.WARBOT_3: True,
+        Drawable.WARBOT_4: True,
+        Drawable.WARBOT_5: True,
+        Drawable.WARBOT_6: True,
+        Drawable.WARBOT_7: True,
+        Drawable.WARBOT_8: True,
+        Drawable.WARBOT_9: True,
+        Drawable.WARBOT_10: True,
+        Drawable.WARBOT_11: True,
         Drawable.OPFOR_1: True,
         Drawable.OPFOR_2: True,
         Drawable.OPFOR_3: True,
@@ -59,6 +51,8 @@ class MissionMap:
         Drawable.OPFOR_7: True,
         Drawable.OPFOR_8: True,
         Drawable.OPFOR_9: True,
+        Drawable.OPFOR_10: True,
+        Drawable.OPFOR_11: True,
         Drawable.CIV_1: True,
         Drawable.CIV_2: True,
         Drawable.CIV_3: True,
@@ -78,7 +72,8 @@ class MissionMap:
         Drawable.CIV_17: True,
         Drawable.CIV_18: True,
         Drawable.CIV_19: True,
-        Drawable.CIV_20: True
+        Drawable.CIV_20: True,
+        Drawable.WATER: True
     }
 
     # opfor generation radius away from objective
@@ -98,7 +93,7 @@ class MissionMap:
         self.objective_location = None
         self.opfor_locations = None
         self.rally_point_location = None
-        self.warbots_locations = None
+        self.warbot_locations = None
         self.civilian_locations = None
 
     def populate_map(self, args):
@@ -111,7 +106,7 @@ class MissionMap:
         self.opfor_locations = self.generate_opfor(args.e)
         # generate rally point and warbots
         self.rally_point_location = self.generate_rally_point()
-        self.warbot_locations = self.generate_warbots(args.r, args.s, args.g, args.u)
+        self.warbot_locations = self.generate_warbots(args.r)
         # generate civilians
         self.civilian_locations = self.generate_civilians(args.c)
         return self.warbot_locations, self.opfor_locations, self.civilian_locations
@@ -126,46 +121,39 @@ class MissionMap:
         self.grid[rally_point_location] = [Drawable.RALLY_POINT]
         return rally_point_location
 
-    def generate_warbot_type(self, count, warbot_type_prefix, warbots):
+    def generate_warbots(self, warbot_count):
+        warbot_locations = []
         warbot_index = 1
-        while warbot_index <= count:
+        while warbot_index <= warbot_count:
             # put bots near rally point
             random_point = self.get_random_unoccupied_location_near_point(
                 self.rally_point_location,
                 MissionMap.WARBOT_GENERATE_RADIUS)
-            self.grid[random_point] = [Drawable[warbot_type_prefix + str(warbot_index)]]
-            # creation of warbot instances goes here
+            self.grid[random_point] = [Drawable["WARBOT_" + str(warbot_index)]]
             warbot_index = warbot_index + 1
-        return warbots
-
-    def generate_warbots(self, riflebot_count, sawbot_count, grenadebot_count, scoutbot_count):
-        warbot_locations = []
-        # generate riflebots
-        self.generate_warbot_type(riflebot_count, "RIFLEBOT_", warbot_locations)
-        # generate sawbots
-        self.generate_warbot_type(sawbot_count, "SAWBOT_", warbot_locations)
-        # generate grenadebots
-        self.generate_warbot_type(grenadebot_count, "GRENADEBOT_", warbot_locations)
-        # generate scouts
-        self.generate_warbot_type(sawbot_count, "SCOUTBOT_", warbot_locations)
         return warbot_locations
 
-    def generate_opfor(self, count):
+    def generate_opfor(self, opfor_count):
         opfor_locations = []
         opfor_index = 1
-        while opfor_index <= count:
+        while opfor_index <= opfor_count:
             # put opfor near objective
             random_point = self.get_random_unoccupied_location_near_point(
                 self.objective_location,
                 MissionMap.OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
             self.grid[random_point] = [Drawable["OPFOR_" + str(opfor_index)]]
-            # creation of opfor instances goes here
             opfor_index = opfor_index + 1
-        return opfor
+        return opfor_locations
 
-    def generate_civilians(self, count):
-
+    def generate_civilians(self, civilian_count):
+        civilian_locations = []
+        civilian_index = 1
+        while civilian_index <= civilian_count:
+            random_point = self.get_random_unoccupied_location()
+            self.grid[random_point] = [Drawable["CIV_" + str(civilian_index)]]
+            civilian_index = civilian_index + 1
+        return civilian_locations
 
     def generate_terrain(self, seed):
         scale = 100.0
@@ -219,12 +207,6 @@ class MissionMap:
     def get_random_lower_location(self):
         return Point(randint(0, self.grid.width - 1), randint((0.75 * self.grid.height),  self.grid.height - 1))
 
-    def get_random_unoccupied_location_near_point(self, point, radius):
-        while True:
-            random_point = self.get_random_location_near_point(point, radius)
-            if not self.is_occupied(random_point):
-                return random_point
-
     def get_random_location_near_point(self, point, radius):
         while True:
             random_direction = Direction.get_random()
@@ -232,6 +214,18 @@ class MissionMap:
             scaled_vector = random_direction.to_scaled_vector(random_radius)
             random_point = point.plus_vector(scaled_vector)
             if self.on_map(random_point):
+                return random_point
+
+    def get_random_unoccupied_location_near_point(self, point, radius):
+        while True:
+            random_point = self.get_random_location_near_point(point, radius)
+            if not self.is_occupied(random_point):
+                return random_point
+
+    def get_random_unoccupied_location(self):
+        while True:
+            random_point = self.get_random_location()
+            if not self.is_occupied(random_point):
                 return random_point
 
     def is_occupied(self, point):

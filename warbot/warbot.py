@@ -13,26 +13,27 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import random
 from datetime import datetime
 from math import fabs
 
 from a_star import find_path
 from action import Action
+from agent import Agent
 from direction import Direction
+from drawable import Drawable
 from shared import *
 
 
-class Warbot:
+class Warbot(Agent):
     WARBOT_COMM_PORT = 2600
 
-    def __init__(self, start_location, name):
-        self.location = start_location
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map,  name):
+        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map)
         self.name = Drawable[name]
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
-        self.visible_map = None
 
     def next_action_from_path(self, current_point, next_point):
         delta_x = next_point.x - current_point.x

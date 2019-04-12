@@ -13,14 +13,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from agent import Agent
 from direction import Direction
 from drawable import Drawable
 
 
-class Opfor:
+class Opfor(Agent):
 
-    def __init__(self, start_location, name):
-        self.location = start_location
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
+        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map)
         self.name = Drawable[name]
         self.direction = Direction.EAST
         self.action_queue = []
