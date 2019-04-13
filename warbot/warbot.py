@@ -16,21 +16,21 @@
 import random
 from datetime import datetime
 from math import fabs
-
+import logging
 from a_star import find_path
 from action import Action
 from agent import Agent
 from direction import Direction
 from drawable import Drawable
 from shared import *
+from agent_messages import *
 
 
 class Warbot(Agent):
     WARBOT_COMM_PORT = 2600
 
-    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map,  name):
-        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map)
-        self.name = Drawable[name]
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
+        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name)
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
@@ -46,7 +46,21 @@ class Warbot(Agent):
         self.action_queue.append(Action[next_dir])
         self.action_queue.append(Action["MOVE_FORWARD"])
 
-    def run(self, grid):  # take a turn
+    def run(self):
+        log_file = "{}.log".format(self.name)
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
+                            filename=log_file,
+                            level=logging.DEBUG)
+        run_simulation = True
+        while run_simulation:
+            # get message from to_me_queue
+            message_to_me = self.to_me_queue.get()
+            logging.debug("Received message: {}".format(message_to_me))
+            self.from_me_queue.put(take_turn_message(self.name, "Hello from {}".format(self.name)))
+
+
+
+    def old_run(self, grid):  # take a turn
         # if there are pending actions do them first
         if len(self.action_queue) > 0:
             action = self.action_queue.pop(0)

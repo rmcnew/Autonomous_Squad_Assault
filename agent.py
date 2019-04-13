@@ -28,11 +28,12 @@
 
 
 class Agent:
-    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map):
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
         self.to_me_queue = to_me_queue
         self.from_me_queue = from_me_queue
         self.location = initial_location
         self.visible_map = initial_visible_map
+        self.name = name
 
     def get_message(self):
         self.to_me_queue.get()

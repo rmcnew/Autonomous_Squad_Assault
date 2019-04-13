@@ -18,14 +18,20 @@ import argparse
 import logging
 import sys
 from datetime import datetime
+from multiprocessing import Process, Queue
 from os import getpid
+
+from opfor import Opfor
 from point import Point
+from shared.constants import *
+from agent_messages import *
 import pygame
 from pygame.locals import *
 
 from drawable import Drawable
 from missionmap import MissionMap
 from pygame_constants import *
+from warbot.warbot import Warbot
 
 
 def parse_arguments():
@@ -41,15 +47,27 @@ def parse_arguments():
 
 
 def main():
+    # start logging
+    log_file = "{}-{}.log".format("Auto_Assault", getpid())
+    logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
+                        filename=log_file,
+                        level=logging.DEBUG)
+    # get command line args
     args = parse_arguments()
-    # generate map:
+    # generate map
     mission_map = MissionMap()
     mission_map.populate_map(args)
+    processes = []
+    to_agent_queues = []
+    to_sim_queue = Queue()
+    # create warbots
+    create_warbots(mission_map, processes, to_agent_queues, to_sim_queue)
+    # create opfor
+    create_opfor(mission_map, processes, to_agent_queues, to_sim_queue)
 
-    # log_file = "{}-{}.log".format("Auto_Assault", getpid())
-    # logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
-    #                     filename=log_file,
-    #                     level=logging.INFO)
+    # create civilians
+
+    # pygame setup
     global FPS_CLOCK, DISPLAY_SURF, BASIC_FONT, SCORE_FONT
     pygame.init()
     FPS_CLOCK = pygame.time.Clock()
@@ -57,15 +75,43 @@ def main():
     BASIC_FONT = pygame.font.Font(SANS_FONT, 24)
     SCORE_FONT = pygame.font.Font(SANS_FONT, 36)
     pygame.display.set_caption(AUTO_ASSAULT)
-    run_game(mission_map)
+    # run the simulation
+    run_simulation(mission_map, processes, to_agent_queues, to_sim_queue)
+
+
+def create_warbots(mission_map, processes, to_agent_queues, to_sim_queue):
+    logging.debug("Creating {} warbots".format(len(mission_map.warbot_locations)))
+    for location in mission_map.warbot_locations:
+        to_queue = Queue()
+        to_agent_queues.append(to_queue)
+        visible_map = mission_map.get_visible_map_around_point(location, WARBOT_VISION_DISTANCE)
+        name = mission_map.get_named_drawable_at_location(location, WARBOT_PREFIX)
+        logging.info("Creating warbot {} at location {}".format(name, location))
+        warbot = Warbot(to_queue, to_sim_queue, location, visible_map, name)
+        process = Process(target=warbot.run)
+        processes.append(process)
+
+
+def create_opfor(mission_map, processes, to_agent_queues, to_sim_queue):
+    logging.debug("Creating {} OPFOR".format(len(mission_map.opfor_locations)))
+    for location in mission_map.opfor_locations:
+        to_queue = Queue()
+        to_agent_queues.append(to_queue)
+        visible_map = mission_map.get_visible_map_around_point(location, OPFOR_VISION_DISTANCE)
+        name = mission_map.get_named_drawable_at_location(location, OPFOR_PREFIX)
+        logging.info("Creating OPFOR {} at location {}".format(name, location))
+        opfor = Opfor(to_queue, to_sim_queue, location, visible_map, name)
+        process = Process(target=opfor.run)
+        processes.append(process)
 
 
 def check_for_quit():
     for event in pygame.event.get():  # event handling loop
         if event.type == QUIT:
-            terminate()
+            return True
         elif event.type == KEYDOWN and (event.key == K_q or event.key == K_ESCAPE):
-            terminate()
+            return True
+    return False
 
 
 def get_winner(scores):
@@ -78,18 +124,26 @@ def get_winner(scores):
     return winner_index
 
 
-def run_game(mission_map):
+def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
     start_time = datetime.now()
+    # start warbot and opfor processes running
+    for process in processes:
+        process.start()
     mission_complete = False
-    while not mission_complete:  # main game loop
+    quit_wanted = False
+    live_process_count = len(processes)
+    while not mission_complete and not quit_wanted:  # main game loop
         # check for q or Esc keypress or window close events to quit
-        check_for_quit()
-        # warbots decide and move
-        # for warbot in warbots:
-        #    warbot.run(grid)
-        # move dogs
-        # for op in opfor:
-        #    op.run(grid)
+        quit_wanted = check_for_quit()
+        messages_received = 0
+        # send out "your_turn" messages to processes
+        for to_agent_queue in to_agent_queues:
+            to_agent_queue.put(your_turn_message())
+        # await "take_turn" response messages
+        while messages_received <= live_process_count:
+            message = to_sim_queue.get()
+            logging.debug("Received message: {}".format(message))
+        # update mission_map
 
         # update display
         DISPLAY_SURF.fill(BG_COLOR.value)
@@ -102,9 +156,13 @@ def run_game(mission_map):
         FPS_CLOCK.tick(FPS)
     #winner_index = get_winner(scores)
     #show_game_over_screen(Drawable(winner_index + 12).name)
+    for process in processes:
+        process.join()
+    terminate()
 
 
 def terminate():
+    logging.shutdown()
     pygame.quit()
     sys.exit()
 
@@ -126,6 +184,25 @@ def draw_grid(mission_map):
                 pygame.draw.rect(DISPLAY_SURF, lineColor.value, rect)
                 inner_rect = pygame.Rect(cell_x + 4, cell_y + 4, CELL_SIZE - 8, CELL_SIZE - 8)
                 pygame.draw.rect(DISPLAY_SURF, fillColor.value, inner_rect)
+
+
+def check_for_key_press():
+    if len(pygame.event.get(QUIT)) > 0:
+        terminate()
+
+    key_up_events = pygame.event.get(KEYUP)
+    if len(key_up_events) == 0:
+        return None
+    if key_up_events[0].key == K_ESCAPE:
+        terminate()
+    return key_up_events[0].key
+
+
+def draw_press_key_message():
+    press_key_surf = BASIC_FONT.render('Press a key to quit', True, Colors.DARK_GRAY.value)
+    press_key_rect = press_key_surf.get_rect()
+    press_key_rect.topleft = (WINDOW_WIDTH - 200, WINDOW_HEIGHT - 30)
+    DISPLAY_SURF.blit(press_key_surf, press_key_rect)
 
 
 def draw_score(elapsed_minutes):
@@ -161,25 +238,6 @@ def draw_legend():
         rect.topleft = (x, TOP_BUFFER + WINDOW_HEIGHT + 60)
         DISPLAY_SURF.blit(surf, rect)
         x = x + LEGEND_SCALE * len(drawable.name) + 7
-
-
-def check_for_key_press():
-    if len(pygame.event.get(QUIT)) > 0:
-        terminate()
-
-    key_up_events = pygame.event.get(KEYUP)
-    if len(key_up_events) == 0:
-        return None
-    if key_up_events[0].key == K_ESCAPE:
-        terminate()
-    return key_up_events[0].key
-
-
-def draw_press_key_message():
-    press_key_surf = BASIC_FONT.render('Press a key to quit', True, Colors.DARK_GRAY.value)
-    press_key_rect = press_key_surf.get_rect()
-    press_key_rect.topleft = (WINDOW_WIDTH - 200, WINDOW_HEIGHT - 30)
-    DISPLAY_SURF.blit(press_key_surf, press_key_rect)
 
 
 def show_game_over_screen(winner):

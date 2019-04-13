@@ -30,9 +30,10 @@ def your_turn_message():
 
 
 # take turn message
-def take_turn_message(action):
+def take_turn_message(name, action):
     """Message that the agent sends to take a turn"""
     message = {MESSAGE_TYPE: TAKE_TURN,
+               FROM: name,
                ACTION: action,
                TIMESTAMP: timestamp()}
     return json.dumps(message)

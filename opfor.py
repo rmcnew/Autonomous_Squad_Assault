@@ -13,16 +13,28 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from agent import Agent
 from direction import Direction
 from drawable import Drawable
-
+from agent_messages import *
 
 class Opfor(Agent):
 
     def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
-        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map)
-        self.name = Drawable[name]
+        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name)
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
+
+    def run(self):
+        log_file = "{}.log".format(self.name)
+        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
+                            filename=log_file,
+                            level=logging.DEBUG)
+        run_simulation = True
+        while run_simulation:
+            # get message from to_me_queue
+            message_to_me = self.to_me_queue.get()
+            logging.debug("Received message: {}".format(message_to_me))
+            self.from_me_queue.put(take_turn_message(self.name, "Hello from {}".format(self.name)))

@@ -26,6 +26,7 @@ from grid import Grid
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
+from shared.constants import *
 
 
 class MissionMap:
@@ -76,18 +77,6 @@ class MissionMap:
         Drawable.WATER: True
     }
 
-    # opfor generation radius away from objective
-    OPFOR_GENERATE_RADIUS = 6  # type: int
-
-    # opfor vision around self
-    OPFOR_VISION_DISTANCE = 8  # type: int
-
-    # warbot generation radius away from rally point
-    WARBOT_GENERATE_RADIUS = 6  # type: int
-
-    # warbot vision around self  (better than human due to high resolution camera)
-    WARBOT_VISION_DISTANCE = 12  # type: int
-
     def __init__(self, grid=Grid()):
         self.grid = grid
         self.objective_location = None
@@ -102,58 +91,55 @@ class MissionMap:
         # randomly generate terrain
         self.generate_terrain(randint(100, 1000))
         # generate objective and opfor
-        self.objective_location = self.generate_objective()
-        self.opfor_locations = self.generate_opfor(args.e)
+        self.generate_objective_location()
+        self.generate_opfor_locations(args.e)
         # generate rally point and warbots
-        self.rally_point_location = self.generate_rally_point()
-        self.warbot_locations = self.generate_warbots(args.r)
+        self.generate_rally_point_location()
+        self.generate_warbot_locations(args.r)
         # generate civilians
-        self.civilian_locations = self.generate_civilians(args.c)
-        return self.warbot_locations, self.opfor_locations, self.civilian_locations
+        self.generate_civilian_locations(args.c)
 
-    def generate_objective(self):
-        objective_location = self.get_random_upper_location_on_dirt()
-        self.grid[objective_location] = [Drawable.OBJECTIVE]
-        return objective_location
+    def generate_objective_location(self):
+        self.objective_location = self.get_random_upper_location_on_dirt()
+        self.grid[self.objective_location] = [Drawable.OBJECTIVE]
 
-    def generate_rally_point(self):
-        rally_point_location = self.get_random_lower_location_on_dirt()
-        self.grid[rally_point_location] = [Drawable.RALLY_POINT]
-        return rally_point_location
+    def generate_rally_point_location(self):
+        self.rally_point_location = self.get_random_lower_location_on_dirt()
+        self.grid[self.rally_point_location] = [Drawable.RALLY_POINT]
 
-    def generate_warbots(self, warbot_count):
-        warbot_locations = []
+    def generate_warbot_locations(self, warbot_count):
+        self.warbot_locations = []
         warbot_index = 1
         while warbot_index <= warbot_count:
             # put bots near rally point
             random_point = self.get_random_unoccupied_location_near_point(
                 self.rally_point_location,
-                MissionMap.WARBOT_GENERATE_RADIUS)
-            self.grid[random_point] = [Drawable["WARBOT_" + str(warbot_index)]]
+                WARBOT_GENERATE_RADIUS)
+            self.grid[random_point] = [Drawable[WARBOT_PREFIX + str(warbot_index)]]
+            self.warbot_locations.append(random_point)
             warbot_index = warbot_index + 1
-        return warbot_locations
 
-    def generate_opfor(self, opfor_count):
-        opfor_locations = []
+    def generate_opfor_locations(self, opfor_count):
+        self.opfor_locations = []
         opfor_index = 1
         while opfor_index <= opfor_count:
             # put opfor near objective
             random_point = self.get_random_unoccupied_location_near_point(
                 self.objective_location,
-                MissionMap.OPFOR_GENERATE_RADIUS)
+                OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
-            self.grid[random_point] = [Drawable["OPFOR_" + str(opfor_index)]]
+            self.grid[random_point] = [Drawable[OPFOR_PREFIX + str(opfor_index)]]
+            self.opfor_locations.append(random_point)
             opfor_index = opfor_index + 1
-        return opfor_locations
 
-    def generate_civilians(self, civilian_count):
-        civilian_locations = []
+    def generate_civilian_locations(self, civilian_count):
+        self.civilian_locations = []
         civilian_index = 1
         while civilian_index <= civilian_count:
             random_point = self.get_random_unoccupied_location()
-            self.grid[random_point] = [Drawable["CIV_" + str(civilian_index)]]
+            self.grid[random_point] = [Drawable[CIVILIAN_PREFIX + str(civilian_index)]]
+            self.civilian_locations.append(random_point)
             civilian_index = civilian_index + 1
-        return civilian_locations
 
     def generate_terrain(self, seed):
         scale = 100.0
@@ -268,5 +254,13 @@ class MissionMap:
     def get_visible_map_around_point(self, point, distance):
         minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
         plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
-        print("minus is {}, plus is {}".format(minus, plus))
+        # print("minus is {}, plus is {}".format(minus, plus))
         return self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1]
+
+    def get_named_drawable_at_location(self, location, prefix):
+        if self.on_map(location):
+            for drawable in self.grid[location]:
+                if drawable.name.startswith(prefix):
+                    return drawable.name
+        else:
+            return None

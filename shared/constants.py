@@ -28,9 +28,27 @@ ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
 ELECTION_WINNER_WAIT_CYCLES = 4
 ID = "id"
+FROM = "from"
 LOSER_ID = "loser_id"
 MESSAGE_TYPE = "message_type"
 TAKE_TURN = "take_turn"
 TIMESTAMP = "timestamp"
 WINNER_ID = "winner_id"
 YOUR_TURN = "your_turn"
+
+# Drawable prefixes
+WARBOT_PREFIX = "WARBOT_"
+OPFOR_PREFIX = "OPFOR_"
+CIVILIAN_PREFIX = "CIV_"
+
+# opfor generation radius away from objective
+OPFOR_GENERATE_RADIUS = 6  # type: int
+
+# opfor vision around self
+OPFOR_VISION_DISTANCE = 8  # type: int
+
+# warbot generation radius away from rally point
+WARBOT_GENERATE_RADIUS = 6  # type: int
+
+# warbot vision around self  (better than human due to high resolution camera)
+WARBOT_VISION_DISTANCE = 12  # type: int
