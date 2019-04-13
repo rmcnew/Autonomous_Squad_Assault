@@ -54,10 +54,11 @@ class Warbot(Agent):
         run_simulation = True
         while run_simulation:
             # get message from to_me_queue
-            message_to_me = self.to_me_queue.get()
-            logging.debug("Received message: {}".format(message_to_me))
+            message = self.to_me_queue.get()
+            if message[MESSAGE_TYPE] == SHUTDOWN:
+                run_simulation = False
+            logging.debug("Received message: {}".format(message))
             self.from_me_queue.put(take_turn_message(self.name, "Hello from {}".format(self.name)))
-
 
 
     def old_run(self, grid):  # take a turn

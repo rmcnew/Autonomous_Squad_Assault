@@ -108,10 +108,10 @@ def create_opfor(mission_map, processes, to_agent_queues, to_sim_queue):
 def check_for_quit():
     for event in pygame.event.get():  # event handling loop
         if event.type == QUIT:
-            return True
+            terminate()
         elif event.type == KEYDOWN and (event.key == K_q or event.key == K_ESCAPE):
-            return True
-    return False
+            terminate()
+
 
 
 def get_winner(scores):
@@ -134,16 +134,20 @@ def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
     live_process_count = len(processes)
     while not mission_complete and not quit_wanted:  # main game loop
         # check for q or Esc keypress or window close events to quit
-        quit_wanted = check_for_quit()
+        check_for_quit()
         messages_received = 0
         # send out "your_turn" messages to processes
         for to_agent_queue in to_agent_queues:
             to_agent_queue.put(your_turn_message())
         # await "take_turn" response messages
-        while messages_received <= live_process_count:
+        logging.debug("Waiting on responses . . .")
+        while messages_received < live_process_count:
             message = to_sim_queue.get()
             logging.debug("Received message: {}".format(message))
+            messages_received = messages_received + 1
+        logging.debug("Done waiting on responses.")
         # update mission_map
+
 
         # update display
         DISPLAY_SURF.fill(BG_COLOR.value)
@@ -156,8 +160,10 @@ def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
         FPS_CLOCK.tick(FPS)
     #winner_index = get_winner(scores)
     #show_game_over_screen(Drawable(winner_index + 12).name)
+    logging.debug("Joining processes . . .")
     for process in processes:
         process.join()
+    logging.debug("Quitting . . .")
     terminate()
 
 

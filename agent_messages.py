@@ -37,3 +37,11 @@ def take_turn_message(name, action):
                ACTION: action,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+def shutdown_message():
+    """Message that directs the receiver to cleanly shutdown"""
+    message = {MESSAGE_TYPE: SHUTDOWN,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
