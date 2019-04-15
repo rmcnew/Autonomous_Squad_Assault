@@ -33,28 +33,37 @@ class Warbot(Agent):
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
+        self.run_simulation = True
 
     def shutdown(self):
         """Clean up resources and shutdown"""
         logging.debug("{} shutting down".format(self.name))
         self.radio.shutdown()
 
-    def run(self):
-        run_simulation = True
-        # notify other warbots that this warbot is operational
-        self.radio.send(warbot_online_message(self.name))
-        while run_simulation:
-            # handle warbot messages
-            warbot_messages = self.radio.receive_messages()
-            for warbot_message in warbot_messages:
-                logging.debug("{}: Received warbot_message: {}".format(self.name, warbot_message))
-            # get message from to_me_queue
-            sim_message = self.get_sim_message()
+    def handle_warbot_messages(self, warbot_messages):
+        for warbot_message in warbot_messages:
+            logging.debug("{}: Received warbot_message: {}".format(self.name, warbot_message))
+
+    def handle_sim_messages(self, sim_messages):
+        for sim_message in sim_messages:
+            logging.debug("{}: Received sim_message: {}".format(self.name, sim_message))
             if sim_message[MESSAGE_TYPE] == SHUTDOWN:
                 logging.debug("{} received shutdown message".format(self.name))
-                run_simulation = False
+                self.run_simulation = False
             logging.debug("Received sim_message: {}".format(sim_message))
             self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))
+
+    def run(self):
+        # notify other warbots that this warbot is operational
+        self.radio.send(warbot_online_message(self.name))
+        while self.run_simulation:
+            # get and handle warbot messages
+            warbot_messages = self.radio.receive_messages()
+            self.handle_warbot_messages(warbot_messages)
+
+            # get and handle simulation messages
+            sim_messages = self.receive_sim_messages()
+            self.handle_sim_messages(sim_messages)
         self.shutdown()
 
     def next_action_from_path(self, current_point, next_point):

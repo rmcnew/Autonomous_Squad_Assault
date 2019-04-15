@@ -40,5 +40,16 @@ class Agent:
         # messages are serialized JSON structures, so we need to deserialize them
         return json.loads(self.to_me_queue.get())
 
+    def sim_messages_ready(self):
+        return not self.to_me_queue.empty()
+
+    def receive_sim_messages(self):
+        messages = []
+        while self.sim_messages_ready():
+            message = self.get_sim_message()
+            if message is not None:
+                messages.append(message)
+        return messages
+
     def put_sim_message(self, message):
         self.from_me_queue.put(message)
