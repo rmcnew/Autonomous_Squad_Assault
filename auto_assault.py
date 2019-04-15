@@ -22,9 +22,7 @@ from multiprocessing import Process, Queue
 from os import getpid
 
 from opfor import Opfor
-from point import Point
-from shared.constants import *
-from agent_messages import *
+from agent.agent_messages import *
 import pygame
 from pygame.locals import *
 
@@ -32,6 +30,10 @@ from drawable import Drawable
 from missionmap import MissionMap
 from pygame_constants import *
 from warbot.warbot import Warbot
+
+# globals used to manage child processes
+to_agent_queues = []
+processes = []
 
 
 def parse_arguments():
@@ -57,13 +59,11 @@ def main():
     # generate map
     mission_map = MissionMap()
     mission_map.populate_map(args)
-    processes = []
-    to_agent_queues = []
     to_sim_queue = Queue()
     # create warbots
-    create_warbots(mission_map, processes, to_agent_queues, to_sim_queue)
+    create_warbots(mission_map, to_sim_queue)
     # create opfor
-    create_opfor(mission_map, processes, to_agent_queues, to_sim_queue)
+    create_opfor(mission_map, to_sim_queue)
 
     # create civilians
 
@@ -79,7 +79,7 @@ def main():
     run_simulation(mission_map, processes, to_agent_queues, to_sim_queue)
 
 
-def create_warbots(mission_map, processes, to_agent_queues, to_sim_queue):
+def create_warbots(mission_map, to_sim_queue):
     logging.debug("Creating {} warbots".format(len(mission_map.warbot_locations)))
     for location in mission_map.warbot_locations:
         to_queue = Queue()
@@ -92,7 +92,7 @@ def create_warbots(mission_map, processes, to_agent_queues, to_sim_queue):
         processes.append(process)
 
 
-def create_opfor(mission_map, processes, to_agent_queues, to_sim_queue):
+def create_opfor(mission_map, to_sim_queue):
     logging.debug("Creating {} OPFOR".format(len(mission_map.opfor_locations)))
     for location in mission_map.opfor_locations:
         to_queue = Queue()
@@ -113,7 +113,6 @@ def check_for_quit():
             terminate()
 
 
-
 def get_winner(scores):
     winner_index = 0
     winner_score = 0
@@ -132,6 +131,7 @@ def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
     mission_complete = False
     quit_wanted = False
     live_process_count = len(processes)
+    loops = 0
     while not mission_complete and not quit_wanted:  # main game loop
         # check for q or Esc keypress or window close events to quit
         check_for_quit()
@@ -148,7 +148,6 @@ def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
         logging.debug("Done waiting on responses.")
         # update mission_map
 
-
         # update display
         DISPLAY_SURF.fill(BG_COLOR.value)
         draw_grid(mission_map)
@@ -158,16 +157,23 @@ def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
         #draw_legend()
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
+        loops = loops + 1
+        logging.debug("Loop counter is now: {}".format(loops))
+        if loops > 10:
+            mission_complete = True
     #winner_index = get_winner(scores)
     #show_game_over_screen(Drawable(winner_index + 12).name)
-    logging.debug("Joining processes . . .")
-    for process in processes:
-        process.join()
-    logging.debug("Quitting . . .")
     terminate()
 
 
 def terminate():
+    logging.debug("Sending shutdown message to child processes . . .")
+    for to_agent_queue in to_agent_queues:
+        to_agent_queue.put(shutdown_message())
+    logging.debug("Waiting for child processes to shutdown . . .")
+    for process in processes:
+        process.join()
+    logging.debug("Quitting . . .")
     logging.shutdown()
     pygame.quit()
     sys.exit()

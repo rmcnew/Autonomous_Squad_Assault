@@ -25,6 +25,7 @@
 # structured message with their current location and
 # visible map around them.  The respond with the action
 # they decide to take during that turn
+import json
 
 
 class Agent:
@@ -35,8 +36,9 @@ class Agent:
         self.visible_map = initial_visible_map
         self.name = name
 
-    def get_message(self):
-        self.to_me_queue.get()
+    def get_sim_message(self):
+        # messages are serialized JSON structures, so we need to deserialize them
+        return json.loads(self.to_me_queue.get())
 
-    def put_message(self, message):
+    def put_sim_message(self, message):
         self.from_me_queue.put(message)

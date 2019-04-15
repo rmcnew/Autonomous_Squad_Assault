@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
-from agent import Agent
+from agent.agent import Agent
 from direction import Direction
-from drawable import Drawable
-from agent_messages import *
+from agent.agent_messages import *
 
 
 class Opfor(Agent):
@@ -36,8 +35,8 @@ class Opfor(Agent):
         run_simulation = True
         while run_simulation:
             # get message from to_me_queue
-            message = self.to_me_queue.get()
+            message = self.get_sim_message()
             if message[MESSAGE_TYPE] == SHUTDOWN:
                 run_simulation = False
             logging.debug("Received message: {}".format(message))
-            self.from_me_queue.put(take_turn_message(self.name, "Hello from {}".format(self.name)))
+            self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))

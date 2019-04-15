@@ -14,20 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import random
-from datetime import datetime
 from math import fabs
 import logging
-from a_star import find_path
 from action import Action
-from agent import Agent
+from agent.agent import Agent
 from direction import Direction
-from drawable import Drawable
-from shared import *
-from agent_messages import *
+from agent.agent_messages import *
 
 
 class Warbot(Agent):
-    WARBOT_COMM_PORT = 2600
 
     def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
         Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name)
@@ -54,12 +49,13 @@ class Warbot(Agent):
         run_simulation = True
         while run_simulation:
             # get message from to_me_queue
-            message = self.to_me_queue.get()
+            message = self.get_sim_message()
             if message[MESSAGE_TYPE] == SHUTDOWN:
+                logging.debug("{} received shutdown message".format(self.name))
                 run_simulation = False
             logging.debug("Received message: {}".format(message))
-            self.from_me_queue.put(take_turn_message(self.name, "Hello from {}".format(self.name)))
-
+            self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))
+        logging.debug("{} shutting down".format(self.name))
 
     def old_run(self, grid):  # take a turn
         # if there are pending actions do them first
