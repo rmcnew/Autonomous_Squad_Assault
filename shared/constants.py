@@ -23,18 +23,20 @@ Y = 'y'
 # message strings
 ACTION = "action"
 ELECTION_BEGIN = "election_begin"
-ELECTION_ID_DECLARE = "election_id_declare"
+ELECTION_NAME_DECLARE = "election_name_declare"
 ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
 ELECTION_WINNER_WAIT_CYCLES = 4
-ID = "id"
 FROM = "from"
-LOSER_ID = "loser_id"
+LOSER_NAME = "loser_name"
 MESSAGE_TYPE = "message_type"
+NAME = "name"
 SHUTDOWN = "shutdown"
 TAKE_TURN = "take_turn"
 TIMESTAMP = "timestamp"
-WINNER_ID = "winner_id"
+TO = "to"
+WARBOT_ONLINE = "warbot_online"
+WINNER_NAME = "winner_name"
 YOUR_TURN = "your_turn"
 
 # Drawable prefixes

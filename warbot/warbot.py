@@ -20,15 +20,42 @@ from action import Action
 from agent.agent import Agent
 from direction import Direction
 from agent.agent_messages import *
+from warbot.warbot_radio import WarbotRadio
+from warbot.warbot_messages import *
 
 
 class Warbot(Agent):
-
-    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
+    """Represents an autonomous robotic warrior"""
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name,
+                 to_this_warbot_queue, warbot_radio_broker):
         Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name)
+        self.radio = WarbotRadio(self.name, to_this_warbot_queue, warbot_radio_broker)
         self.direction = Direction.EAST
         self.action_queue = []
         self.path = []
+
+    def shutdown(self):
+        """Clean up resources and shutdown"""
+        logging.debug("{} shutting down".format(self.name))
+        self.radio.shutdown()
+
+    def run(self):
+        run_simulation = True
+        # notify other warbots that this warbot is operational
+        self.radio.send(warbot_online_message(self.name))
+        while run_simulation:
+            # handle warbot messages
+            warbot_messages = self.radio.receive_messages()
+            for warbot_message in warbot_messages:
+                logging.debug("{}: Received warbot_message: {}".format(self.name, warbot_message))
+            # get message from to_me_queue
+            sim_message = self.get_sim_message()
+            if sim_message[MESSAGE_TYPE] == SHUTDOWN:
+                logging.debug("{} received shutdown message".format(self.name))
+                run_simulation = False
+            logging.debug("Received sim_message: {}".format(sim_message))
+            self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))
+        self.shutdown()
 
     def next_action_from_path(self, current_point, next_point):
         delta_x = next_point.x - current_point.x
@@ -40,35 +67,6 @@ class Warbot(Agent):
         next_dir = "turn_{}".format(Direction((delta_x, delta_y)).name).upper()
         self.action_queue.append(Action[next_dir])
         self.action_queue.append(Action["MOVE_FORWARD"])
-
-    def run(self):
-        log_file = "{}.log".format(self.name)
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
-                            filename=log_file,
-                            level=logging.DEBUG)
-        run_simulation = True
-        while run_simulation:
-            # get message from to_me_queue
-            message = self.get_sim_message()
-            if message[MESSAGE_TYPE] == SHUTDOWN:
-                logging.debug("{} received shutdown message".format(self.name))
-                run_simulation = False
-            logging.debug("Received message: {}".format(message))
-            self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))
-        logging.debug("{} shutting down".format(self.name))
-
-    def old_run(self, grid):  # take a turn
-        # if there are pending actions do them first
-        if len(self.action_queue) > 0:
-            action = self.action_queue.pop(0)
-            self.do_action(action, grid)
-        # if following a path, get the next point
-        # and queue the next actions to move there
-        elif len(self.path) > 0:
-            next_point = self.path.pop(0)
-            self.next_action_from_path(self.location, next_point)
-            action = self.action_queue.pop(0)
-            self.do_action(action, grid)
 
     def do_action(self, action, grid):
         if action is Action.MOVE_FORWARD or action is Action.MOVE_BACKWARD:
@@ -163,3 +161,15 @@ class Warbot(Agent):
     #     else:  # cannot move up, back off and change direction
     #         self.action_queue.insert(0, Action.TURN_LEFT)
 
+    def old_run(self, grid):  # take a turn
+        # if there are pending actions do them first
+        if len(self.action_queue) > 0:
+            action = self.action_queue.pop(0)
+            self.do_action(action, grid)
+        # if following a path, get the next point
+        # and queue the next actions to move there
+        elif len(self.path) > 0:
+            next_point = self.path.pop(0)
+            self.next_action_from_path(self.location, next_point)
+            action = self.action_queue.pop(0)
+            self.do_action(action, grid)

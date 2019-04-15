@@ -21,6 +21,14 @@ from shared.functions import timestamp
 import json
 
 
+def warbot_online_message(name):
+    """Message to notify other warbots that this warbot is operational"""
+    message = {MESSAGE_TYPE: WARBOT_ONLINE,
+               FROM: name,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
 def election_begin_message():
     """Message that indicates an election is starting"""
     message = {MESSAGE_TYPE: ELECTION_BEGIN,
@@ -28,27 +36,27 @@ def election_begin_message():
     return json.dumps(message)
 
 
-def election_id_declare_message(my_id):
+def election_id_declare_message(name):
     """Message that gives process ID for comparison"""
-    message = {MESSAGE_TYPE: ELECTION_ID_DECLARE,
-               ID: my_id,
+    message = {MESSAGE_TYPE: ELECTION_NAME_DECLARE,
+               NAME: name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
 
-def election_compare_message(my_id, their_id):
-    """Message that indicates a process won an ID comparison against another process"""
+def election_compare_message(my_name, their_name):
+    """Message that indicates a warbot won an name comparison against another warbot"""
     message = {MESSAGE_TYPE: ELECTION_COMPARE,
-               WINNER_ID: my_id,
-               LOSER_ID: their_id,
+               WINNER_NAME: my_name,
+               LOSER_NAME: their_name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
 
-def election_end_message(my_id):
-    """Message that indicates a process has defeated all challengers and
+def election_end_message(my_name):
+    """Message that indicates a warbot has defeated all challengers and
        not received additional challenges before the timeout"""
     message = {MESSAGE_TYPE: ELECTION_END,
-               WINNER_ID: my_id,
+               WINNER_NAME: my_name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)

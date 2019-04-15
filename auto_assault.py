@@ -19,21 +19,24 @@ import logging
 import sys
 from datetime import datetime
 from multiprocessing import Process, Queue
-from os import getpid
 
-from opfor import Opfor
-from agent.agent_messages import *
 import pygame
 from pygame.locals import *
 
+from agent.agent_messages import *
 from drawable import Drawable
 from missionmap import MissionMap
+from opfor import Opfor
 from pygame_constants import *
 from warbot.warbot import Warbot
+from warbot.warbot_radio_broker import WarbotRadioBroker
 
 # globals used to manage child processes
 to_agent_queues = []
 processes = []
+to_all_warbots_queue = Queue()
+warbot_radio_broker = WarbotRadioBroker(to_all_warbots_queue)
+warbot_radio_broker_process = Process(target=warbot_radio_broker.run)
 
 
 def parse_arguments():
@@ -50,7 +53,7 @@ def parse_arguments():
 
 def main():
     # start logging
-    log_file = "{}-{}.log".format("Auto_Assault", getpid())
+    log_file = "Auto_Assault.log"
     logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
                         filename=log_file,
                         level=logging.DEBUG)
@@ -76,7 +79,7 @@ def main():
     SCORE_FONT = pygame.font.Font(SANS_FONT, 36)
     pygame.display.set_caption(AUTO_ASSAULT)
     # run the simulation
-    run_simulation(mission_map, processes, to_agent_queues, to_sim_queue)
+    run_simulation(mission_map, to_sim_queue)
 
 
 def create_warbots(mission_map, to_sim_queue):
@@ -87,7 +90,8 @@ def create_warbots(mission_map, to_sim_queue):
         visible_map = mission_map.get_visible_map_around_point(location, WARBOT_VISION_DISTANCE)
         name = mission_map.get_named_drawable_at_location(location, WARBOT_PREFIX)
         logging.info("Creating warbot {} at location {}".format(name, location))
-        warbot = Warbot(to_queue, to_sim_queue, location, visible_map, name)
+        to_this_warbot_queue = Queue()
+        warbot = Warbot(to_queue, to_sim_queue, location, visible_map, name, to_this_warbot_queue, warbot_radio_broker)
         process = Process(target=warbot.run)
         processes.append(process)
 
@@ -123,11 +127,12 @@ def get_winner(scores):
     return winner_index
 
 
-def run_simulation(mission_map, processes, to_agent_queues, to_sim_queue):
-    start_time = datetime.now()
+def run_simulation(mission_map, to_sim_queue):
+    warbot_radio_broker_process.start()
     # start warbot and opfor processes running
     for process in processes:
         process.start()
+    start_time = datetime.now()
     mission_complete = False
     quit_wanted = False
     live_process_count = len(processes)
@@ -170,9 +175,11 @@ def terminate():
     logging.debug("Sending shutdown message to child processes . . .")
     for to_agent_queue in to_agent_queues:
         to_agent_queue.put(shutdown_message())
+    to_all_warbots_queue.put(shutdown_message())
     logging.debug("Waiting for child processes to shutdown . . .")
     for process in processes:
         process.join()
+    warbot_radio_broker_process.join()
     logging.debug("Quitting . . .")
     logging.shutdown()
     pygame.quit()
