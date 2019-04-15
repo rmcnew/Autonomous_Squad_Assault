@@ -16,9 +16,9 @@
 import random
 from math import fabs
 import logging
-from action import Action
+from agent.action import Action
 from agent.agent import Agent
-from direction import Direction
+from simulation.direction import Direction
 from agent.agent_messages import *
 from warbot.warbot_radio import WarbotRadio
 from warbot.warbot_messages import *

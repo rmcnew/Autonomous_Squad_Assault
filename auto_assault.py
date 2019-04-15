@@ -24,10 +24,10 @@ import pygame
 from pygame.locals import *
 
 from agent.agent_messages import *
-from drawable import Drawable
-from missionmap import MissionMap
-from opfor import Opfor
-from pygame_constants import *
+from simulation.drawable import Drawable
+from simulation.missionmap import MissionMap
+from opfor.opfor import Opfor
+from graphics.pygame_constants import *
 from warbot.warbot import Warbot
 from warbot.warbot_radio_broker import WarbotRadioBroker
 

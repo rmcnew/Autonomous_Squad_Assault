@@ -17,8 +17,7 @@
 # A* path finding
 from math import fabs
 
-from direction import Direction
-from shared import *
+from simulation.direction import Direction
 
 
 # shared constants and functions
@@ -30,11 +29,11 @@ START = None
 END = None
 
 
-def get_enterable_adjacent_locations(grid, location):
+def get_enterable_adjacent_locations(map, location):
     locations = []
     for direction in Direction:
         candidate = location.plus(direction)
-        if can_enter(grid, candidate):
+        if map.can_enter(candidate):
             locations.append(candidate)
     return locations
 

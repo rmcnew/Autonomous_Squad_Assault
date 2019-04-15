@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 from agent.agent import Agent
-from direction import Direction
+from simulation.direction import Direction
 from agent.agent_messages import *
 
 

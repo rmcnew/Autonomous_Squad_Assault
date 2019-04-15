@@ -18,7 +18,7 @@
 
 from enum import Enum
 
-from colors import Colors
+from graphics.colors import Colors
 
 
 class Drawable(Enum):

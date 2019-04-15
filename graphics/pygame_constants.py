@@ -16,7 +16,7 @@
 
 # constants for pygame
 
-from colors import Colors
+from graphics.colors import Colors
 
 # frames per second
 FPS = 30

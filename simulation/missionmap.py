@@ -14,15 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from shared import *
-from drawable import Drawable
-from direction import Direction
-from point import Point
+from simulation.drawable import Drawable
+from simulation.direction import Direction
+from simulation.point import Point
 from random import randint
 from math import sqrt, pow
 from noise import pnoise3
 
-from grid import Grid
+from simulation.grid import Grid
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
@@ -230,8 +229,7 @@ class MissionMap:
         return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
 
     def can_enter(self, point):
-        return self.on_map(point)
-        # other checks go here
+        return self.on_map(point) and not self.is_occupied(point)
 
     def normalize_point(self, point):
         point_x = point.x

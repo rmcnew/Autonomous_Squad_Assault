@@ -14,8 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy
-from pygame_constants import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
-from drawable import Drawable
+from graphics.pygame_constants import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
+from simulation.drawable import Drawable
 
 
 class Grid:

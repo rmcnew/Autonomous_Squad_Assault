@@ -25,6 +25,7 @@ import json
 def your_turn_message():
     """Message that indicates the agent needs to decide and submit a take_turn message"""
     message = {MESSAGE_TYPE: YOUR_TURN,
+
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
