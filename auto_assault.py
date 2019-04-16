@@ -24,10 +24,10 @@ import pygame
 from pygame.locals import *
 
 from agent.agent_messages import *
+from graphics.pygame_constants import *
+from opfor.opfor import Opfor
 from simulation.drawable import Drawable
 from simulation.missionmap import MissionMap
-from opfor.opfor import Opfor
-from graphics.pygame_constants import *
 from warbot.warbot import Warbot
 from warbot.warbot_radio_broker import WarbotRadioBroker
 
@@ -62,8 +62,10 @@ class AutoAssault:
             name = self.mission_map.get_named_drawable_at_location(location, WARBOT_PREFIX)
             logging.info("Creating warbot {} at location {}".format(name, location))
             to_this_warbot_queue = Queue()
-            warbot = Warbot(to_queue, to_sim_queue, location, visible_map, name, to_this_warbot_queue, self.warbot_radio_broker)
+            warbot = Warbot(to_queue, to_sim_queue, location, visible_map,
+                            name, to_this_warbot_queue, self.warbot_radio_broker)
             self.warbots.append(warbot)
+            self.agents.append(warbot)
             process = Process(target=warbot.run)
             self.processes.append(process)
 
@@ -78,6 +80,7 @@ class AutoAssault:
             logging.info("Creating OPFOR {} at location {}".format(name, location))
             opfor = Opfor(to_queue, to_sim_queue, location, visible_map, name)
             self.opfors.append(opfor)
+            self.agents.append(opfor)
             process = Process(target=opfor.run)
             self.processes.append(process)
 
@@ -199,7 +202,7 @@ class AutoAssault:
     def update_mission_map(self, messages_received):
         """Update game state (mission_map) from agent subprocess messages"""
         for message in messages_received:
-            logging.debug("Received message: {}".format(message))
+            logging.debug("Simulation:  Received message: {}".format(message))
 
     def start_child_processes(self):
         """Start child processes running for agents and warbot radio broker process"""
@@ -218,11 +221,12 @@ class AutoAssault:
         while not mission_complete and not quit_wanted:  # main game loop
             # check for q or Esc keypress or window close events to quit
             self.check_for_quit()
+            # give agents updated simulation state and await their actions for this turn
             messages_received = []
-            # send out "your_turn" messages to agents
-
-            for to_agent_queue in self.to_agent_queues:
-                to_agent_queue.put(your_turn_message())
+            for agent in self.agents:
+                agent_location = agent.location
+                visible_map = self.mission_map.get_visible_map_around_point(agent_location, agent.sight_radius)
+                agent.to_me_queue.put(your_turn_message(visible_map))
             # await "take_turn" response messages
             logging.debug("Waiting on responses . . .")
             while len(messages_received) < live_process_count:

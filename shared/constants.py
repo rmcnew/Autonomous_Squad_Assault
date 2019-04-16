@@ -28,16 +28,27 @@ ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
 ELECTION_WINNER_WAIT_CYCLES = 4
 FROM = "from"
+GRID = "grid"
 LOSER_NAME = "loser_name"
+MAX_X = "max_x"
+MAX_Y = "max_y"
 MESSAGE_TYPE = "message_type"
+MIN_X = "min_x"
+MIN_Y = "min_y"
 NAME = "name"
 SHUTDOWN = "shutdown"
 TAKE_TURN = "take_turn"
 TIMESTAMP = "timestamp"
 TO = "to"
+VISIBLE_MAP = "visible_map"
 WARBOT_ONLINE = "warbot_online"
 WINNER_NAME = "winner_name"
+YOUR_LOCATION = "your_location"
 YOUR_TURN = "your_turn"
+
+# agent actions
+MOVE_TO = "move_to"
+FIRE_AT = "fire_at"
 
 # Drawable prefixes
 WARBOT_PREFIX = "WARBOT_"

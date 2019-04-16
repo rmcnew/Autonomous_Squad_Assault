@@ -14,16 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import logging
+
 from agent.agent import Agent
-from simulation.direction import Direction
 from agent.agent_messages import *
+from simulation.direction import Direction
 
 
 class Opfor(Agent):
 
     def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
-        Agent.__init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name)
-        self.direction = Direction.EAST
+        Agent.__init__(self, to_me_queue, from_me_queue, initial_location,
+                       initial_visible_map, OPFOR_VISION_DISTANCE, name)
+        self.direction = Direction.SOUTH
         self.action_queue = []
         self.path = []
 

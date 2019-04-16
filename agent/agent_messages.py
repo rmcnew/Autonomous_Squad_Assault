@@ -16,18 +16,28 @@
 
 # messages common to all agents in the simulation
 
+import json
+
 from shared.constants import *
 from shared.functions import timestamp
-import json
 
 
 # your turn message
-def your_turn_message():
+def your_turn_message(visible_map):
     """Message that indicates the agent needs to decide and submit a take_turn message"""
     message = {MESSAGE_TYPE: YOUR_TURN,
-
+               VISIBLE_MAP: visible_map,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+# agent actions
+def move_to(location):
+    return {MOVE_TO: location.to_dict()}
+
+
+def fire_at(location):
+    return {FIRE_AT: location.to_dict()}
 
 
 # take turn message

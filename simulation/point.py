@@ -13,7 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+from shared.constants import X, Y
 
 class Point:
     """Represents a point on the grid"""
@@ -29,6 +29,9 @@ class Point:
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
+
+    def to_dict(self):
+        return {X: self.x, Y: self.y}
 
     def plus_direction(self, direction):
         return Point(self.x + direction.value[0], self.y + direction.value[1])

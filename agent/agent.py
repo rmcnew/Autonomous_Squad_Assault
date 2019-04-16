@@ -29,11 +29,12 @@ import json
 
 
 class Agent:
-    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name):
+    def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, sight_radius, name):
         self.to_me_queue = to_me_queue
         self.from_me_queue = from_me_queue
         self.location = initial_location
         self.visible_map = initial_visible_map
+        self.sight_radius = sight_radius
         self.name = name
 
     def get_sim_message(self):
@@ -53,3 +54,4 @@ class Agent:
 
     def put_sim_message(self, message):
         self.from_me_queue.put(message)
+

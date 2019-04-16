@@ -1,9 +1,12 @@
 Autonomous Squad Assault was developed using Python 3.5.3 on Linux.
 
-It should be able to run under on other platforms that support Python 3, but it has not been tested exhaustively.
+It should be able to run on other platforms that support Python 3, but it has not been tested on other platforms.
 
-These instructions assume that you have little to no Python background, but should enable you to get Autonomous Squad Assault running.
+These instructions assume that you have little to no Python background, but should enable you to get the
+Autonomous Squad Assault simulation running.
 
+
+== Installation Instructions ==
 1.  Install Python 3 on your platform.
 
 If you are using Linux or macOS, there's a good chance that you might have Python already installed.  Open a terminal
@@ -22,8 +25,8 @@ In the Autonomous Squad Assault directory, run the following command:
 
 python3 -m venv .venv
 
-This will create an empty virtualenv environment in the ".venv" directory.  This allows Autonomous Squad Assault requirements to be
-installed locally.
+This will create an empty virtualenv environment in the ".venv" directory.  This allows Autonomous Squad Assault
+requirements to be installed locally.
 
 4.  Activate the virtualenv environment
 
@@ -41,7 +44,36 @@ pip install -r requirements.txt
 
 This will install the Python packages needed to run Autonomous Squad Assault in the virtualenv.
 
-6.  Run the program
+6.  Run the simulation
 
 python3 auto_assault.py
 
+
+== Simulation Parameters ==
+You can specify how many warbots you want in the simulation using the -r command line flag:
+
+python3 auto_assault.py -r N
+
+where N is the desired number of warbots.  You can specify between 1 and 11 warbots.  The default is 5.
+
+
+You can specify how many opposing force soldiers (OPFOR) you want in the simulation using the -e command line flag:
+
+python3 auto_assault.py -e X
+
+where X is the desired number of OPFOR.  You can specify between 1 and 11 OPFOR.  The default is 5.
+
+
+You can specify how many civilians you want in the simulation using the -c command line flag:
+
+python3 auto_assault.py -c Y
+
+where Y is the desired number of civilians.  You can specify between 0 and 20 civilians.  The default is 5.
+
+
+Multiple command line flags can be combined together to tailor the simulation to your desired parameters
+and / or performance needs:
+
+python3 auto_assault.py -r N -e X -c Y
+
+Enjoy the simulation!

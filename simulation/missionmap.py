@@ -14,18 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from simulation.drawable import Drawable
-from simulation.direction import Direction
-from simulation.point import Point
 from random import randint
-from math import sqrt, pow
-from noise import pnoise3
 
-from simulation.grid import Grid
+from math import pow, sqrt
+from noise import pnoise3
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 from shared.constants import *
+from simulation.direction import Direction
+from simulation.drawable import Drawable
+from simulation.grid import Grid
+from simulation.point import Point
 
 
 class MissionMap:
@@ -253,7 +253,12 @@ class MissionMap:
         minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
         plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
         # print("minus is {}, plus is {}".format(minus, plus))
-        return self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1]
+        return {YOUR_LOCATION: point.to_dict(),
+                GRID: self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1].tolist(),
+                MIN_X: minus.x,
+                MAX_X: (plus.x + 1),
+                MIN_Y: minus.y,
+                MAX_Y: (plus.y + 1)}
 
     def get_named_drawable_at_location(self, location, prefix):
         if self.on_map(location):
