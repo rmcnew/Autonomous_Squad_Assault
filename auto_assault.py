@@ -37,8 +37,7 @@ class AutoAssault:
     def __init__(self, args):
         self.start_time = None
         # generate map
-        self.mission_map = MissionMap()
-        self.mission_map.populate_map(args)
+        self.mission_map = MissionMap(args)
         # create IPC queues and warbot radio message broker
         self.to_agent_queues = []
         self.to_all_warbots_queue = Queue()

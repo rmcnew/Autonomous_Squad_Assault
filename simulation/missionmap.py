@@ -13,78 +13,22 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 from random import randint
 
-from math import pow, sqrt
 from noise import pnoise3
 
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 from shared.constants import *
+from simulation.abstract_map import AbstractMap
 from simulation.direction import Direction
 from simulation.drawable import Drawable
-from simulation.grid import Grid
 from simulation.point import Point
 
 
-class MissionMap:
-    # hash for quick lookup of occupied grid squares
-    occupied = {
-        Drawable.WARBOT_1: True,
-        Drawable.WARBOT_2: True,
-        Drawable.WARBOT_3: True,
-        Drawable.WARBOT_4: True,
-        Drawable.WARBOT_5: True,
-        Drawable.WARBOT_6: True,
-        Drawable.WARBOT_7: True,
-        Drawable.WARBOT_8: True,
-        Drawable.WARBOT_9: True,
-        Drawable.WARBOT_10: True,
-        Drawable.WARBOT_11: True,
-        Drawable.OPFOR_1: True,
-        Drawable.OPFOR_2: True,
-        Drawable.OPFOR_3: True,
-        Drawable.OPFOR_4: True,
-        Drawable.OPFOR_5: True,
-        Drawable.OPFOR_6: True,
-        Drawable.OPFOR_7: True,
-        Drawable.OPFOR_8: True,
-        Drawable.OPFOR_9: True,
-        Drawable.OPFOR_10: True,
-        Drawable.OPFOR_11: True,
-        Drawable.CIV_1: True,
-        Drawable.CIV_2: True,
-        Drawable.CIV_3: True,
-        Drawable.CIV_4: True,
-        Drawable.CIV_5: True,
-        Drawable.CIV_6: True,
-        Drawable.CIV_7: True,
-        Drawable.CIV_8: True,
-        Drawable.CIV_9: True,
-        Drawable.CIV_10: True,
-        Drawable.CIV_11: True,
-        Drawable.CIV_12: True,
-        Drawable.CIV_13: True,
-        Drawable.CIV_14: True,
-        Drawable.CIV_15: True,
-        Drawable.CIV_16: True,
-        Drawable.CIV_17: True,
-        Drawable.CIV_18: True,
-        Drawable.CIV_19: True,
-        Drawable.CIV_20: True,
-        Drawable.WATER: True
-    }
-
-    def __init__(self, grid=Grid()):
-        self.grid = grid
-        self.objective_location = None
-        self.opfor_locations = None
-        self.rally_point_location = None
-        self.warbot_locations = None
-        self.civilian_locations = None
-
-    def populate_map(self, args):
+class MissionMap(AbstractMap):
+    def __init__(self, args):
+        AbstractMap.__init__(self)
         # initialize the default grid
         self.grid.default_grid()
         # randomly generate terrain
@@ -213,42 +157,6 @@ class MissionMap:
             if not self.is_occupied(random_point):
                 return random_point
 
-    def is_occupied(self, point):
-        for drawable in self.grid[point]:
-            if drawable in MissionMap.occupied:
-                return True
-        return False
-
-    def on_map(self, point):
-        return 0 <= point.x < self.grid.width and 0 <= point.y < self.grid.height
-
-    def empty(self, point):
-        return len(self.grid[point]) == 0
-
-    def distance(self, point_a, point_b):
-        return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
-
-    def can_enter(self, point):
-        return self.on_map(point) and not self.is_occupied(point)
-
-    def normalize_point(self, point):
-        point_x = point.x
-        if point_x < 0:
-            point_x = 0
-        elif point_x >= self.grid.width:
-            point_x = self.grid.width - 1
-
-        point_y = point.y
-        if point_y < 0:
-            point_y = 0
-        elif point_y >= self.grid.height:
-            point_y = self.grid.height - 1
-        # only create a new point if needed
-        if point_x == point.x and point_y == point.y:
-            return point
-        else:  # otherwise return the existing point
-            return Point(point_x, point_y)
-
     def get_visible_map_around_point(self, point, distance):
         minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
         plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
@@ -256,14 +164,6 @@ class MissionMap:
         return {YOUR_LOCATION: point.to_dict(),
                 GRID: self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1].tolist(),
                 MIN_X: minus.x,
-                MAX_X: (plus.x + 1),
-                MIN_Y: minus.y,
-                MAX_Y: (plus.y + 1)}
+                MIN_Y: minus.y}
 
-    def get_named_drawable_at_location(self, location, prefix):
-        if self.on_map(location):
-            for drawable in self.grid[location]:
-                if drawable.name.startswith(prefix):
-                    return drawable.name
-        else:
-            return None
+

@@ -17,7 +17,6 @@ import logging
 
 from agent.agent import Agent
 from agent.agent_messages import *
-from simulation.direction import Direction
 from warbot.warbot_messages import *
 from warbot.warbot_radio import WarbotRadio
 
@@ -32,7 +31,6 @@ class Warbot(Agent):
         self.action_queue = []
         self.path = []
         self.run_simulation = True
-        self.direction = Direction.NORTH
 
     def shutdown(self):
         """Clean up resources and shutdown"""
@@ -50,6 +48,9 @@ class Warbot(Agent):
                 logging.debug("{} received shutdown message".format(self.name))
                 self.run_simulation = False
             elif sim_message[MESSAGE_TYPE] == YOUR_TURN:
+                self.update_location_and_visible_map(sim_message[VISIBLE_MAP])
+                self.visible_map.scan()
+                logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
                 self.put_sim_message(take_turn_message(self.name, "Hello!"))
 
     def run(self):

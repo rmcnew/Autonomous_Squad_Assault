@@ -27,6 +27,9 @@
 # they decide to take during that turn
 import json
 
+from shared.constants import *
+from simulation.visible_map import VisibleMap
+
 
 class Agent:
     def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, sight_radius, name):
@@ -55,3 +58,8 @@ class Agent:
     def put_sim_message(self, message):
         self.from_me_queue.put(message)
 
+    def update_location_and_visible_map(self, visible_map_around_point):
+        self.location = visible_map_around_point[YOUR_LOCATION]
+        self.visible_map = VisibleMap(visible_map_around_point[GRID],
+                                      visible_map_around_point[MIN_X],
+                                      visible_map_around_point[MIN_Y])

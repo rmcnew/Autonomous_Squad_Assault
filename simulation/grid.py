@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy
-from graphics.pygame_constants import WINDOW_HEIGHT, WINDOW_WIDTH, CELL_SIZE
+
+from graphics.pygame_constants import CELL_SIZE, WINDOW_HEIGHT, WINDOW_WIDTH
 from simulation.drawable import Drawable
 
 
@@ -34,9 +35,9 @@ class Grid:
 
     def import_array(self, array):
         """import an array to represent a portion of the map visible to a warbot or opfor"""
-        self.array = array
-        self.width = array.shape[0]
-        self.height = array.shape[1]
+        self.array = numpy.array(array)
+        self.width = self.array.shape[0]
+        self.height = self.array.shape[1]
 
     def __getitem__(self, point):  # point must be a Point; returned value is a list of Drawable
         drawables_present = []
