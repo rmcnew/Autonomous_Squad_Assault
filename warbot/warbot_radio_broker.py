@@ -27,6 +27,8 @@
 # they decide to take during that turn
 import json
 import logging
+from time import sleep
+
 from shared.constants import *
 
 
@@ -47,13 +49,20 @@ class WarbotRadioBroker:
         else:
             logging.warn("{} was not subscribed to warbot radio".format(name))
 
+    def messages_ready(self):
+        return not self.to_all_warbots_queue.empty()
+
     def run(self):
         while True:
-            raw_message = self.to_all_warbots_queue.get()
-            message = json.loads(raw_message)
-            if message[MESSAGE_TYPE] == SHUTDOWN:
-                logging.debug("WarbotRadioBroker received shutdown message.  Shutting down . . .")
-                break
-            for warbot_queue in self.individual_warbot_queues.values():
-                warbot_queue.put_nowait(raw_message)
+            if self.messages_ready():
+                raw_message = self.to_all_warbots_queue.get()
+                message = json.loads(raw_message)
+                if message[MESSAGE_TYPE] == SHUTDOWN:
+                    logging.debug("WarbotRadioBroker received shutdown message.  Shutting down . . .")
+                    break
+                for warbot_queue in self.individual_warbot_queues.values():
+                    warbot_queue.put_nowait(raw_message)
+            else:
+                sleep(0.05)
+
 

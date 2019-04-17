@@ -26,6 +26,7 @@ class WarbotRadio:
         self.to_this_warbot_queue = to_this_warbot_queue
         self.warbot_radio_broker = warbot_radio_broker
         warbot_radio_broker.subscribe(name, self.to_this_warbot_queue)
+        self.warbot_messages = []
 
     def send(self, message):
         # logging.debug("Sending message: {}".format(message))
@@ -41,13 +42,15 @@ class WarbotRadio:
     def messages_ready(self):
         return not self.to_this_warbot_queue.empty()
 
-    def receive_messages(self):
-        messages = []
+    def receive_message(self):
         while self.messages_ready():
             message = self.receive()
             if message is not None:
-                messages.append(message)
-        return messages
+                self.warbot_messages.append(message)
+        if len(self.warbot_messages) > 0:
+            return self.warbot_messages.pop(0)
+        else:
+            return None
 
     def shutdown(self):
         self.warbot_radio_broker.unsubscribe(self.name)

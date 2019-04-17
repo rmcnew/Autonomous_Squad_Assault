@@ -64,3 +64,4 @@ def team_assignment_message(team_a_leader, team_a, team_b_leader, team_b):
                TEAM_B_LEADER: team_b_leader,
                TEAM_B: team_b,
                TIMESTAMP: timestamp()}
+    return json.dumps(message)
