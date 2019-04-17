@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import json
-import logging
-from warbot.warbot_radio_broker import WarbotRadioBroker
+
 from shared.constants import *
 
 
@@ -25,7 +24,7 @@ class WarbotRadio:
     def __init__(self, name, to_this_warbot_queue, warbot_radio_broker):
         self.name = name
         self.to_this_warbot_queue = to_this_warbot_queue
-        self.warbot_radio_broker= warbot_radio_broker
+        self.warbot_radio_broker = warbot_radio_broker
         warbot_radio_broker.subscribe(name, self.to_this_warbot_queue)
 
     def send(self, message):
@@ -35,7 +34,7 @@ class WarbotRadio:
     def receive(self):
         message = json.loads(self.to_this_warbot_queue.get())
         if FROM in message and message[FROM] == self.name:
-            return None
+            return None  # filter out messages that this warbot just sent
         # logging.debug("Received message: {}".format(message))
         return message
 

@@ -16,9 +16,10 @@
 
 # messages common to warbots in the simulation
 
+import json
+
 from shared.constants import *
 from shared.functions import timestamp
-import json
 
 
 def warbot_online_message(name):
@@ -29,15 +30,8 @@ def warbot_online_message(name):
     return json.dumps(message)
 
 
-def election_begin_message():
-    """Message that indicates an election is starting"""
-    message = {MESSAGE_TYPE: ELECTION_BEGIN,
-               TIMESTAMP: timestamp()}
-    return json.dumps(message)
-
-
-def election_id_declare_message(name):
-    """Message that gives process ID for comparison"""
+def election_name_declare_message(name):
+    """Message that implicitly starts the leader election and gives name for comparison"""
     message = {MESSAGE_TYPE: ELECTION_NAME_DECLARE,
                NAME: name,
                TIMESTAMP: timestamp()}
@@ -60,3 +54,13 @@ def election_end_message(my_name):
                WINNER_NAME: my_name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+def team_assignment_message(team_a_leader, team_a, team_b_leader, team_b):
+    """Message sent by leader that assigns warbots to teams"""
+    message = {MESSAGE_TYPE: TEAM_ASSIGNMENT,
+               TEAM_A_LEADER: team_a_leader,
+               TEAM_A: team_a,
+               TEAM_B_LEADER: team_b_leader,
+               TEAM_B: team_b,
+               TIMESTAMP: timestamp()}

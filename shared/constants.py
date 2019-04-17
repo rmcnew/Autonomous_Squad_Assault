@@ -22,10 +22,10 @@ Y = 'y'
 
 # message strings
 ACTION = "action"
-ELECTION_BEGIN = "election_begin"
-ELECTION_NAME_DECLARE = "election_name_declare"
+ELECTION_NAME_DECLARE = "election_name_declare"  # also serves as ELECTION_BEGIN
 ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
+ELECTION_SLEEP_WAIT = 0.3
 ELECTION_WINNER_WAIT_CYCLES = 4
 FROM = "from"
 GRID = "grid"
@@ -38,6 +38,11 @@ MIN_Y = "min_y"
 NAME = "name"
 SHUTDOWN = "shutdown"
 TAKE_TURN = "take_turn"
+TEAM_A = "team_a"
+TEAM_A_LEADER = "team_a_leader"
+TEAM_ASSIGNMENT = "team_assignment"
+TEAM_B = "team_b"
+TEAM_B_LEADER = "team_b_leader"
 TIMESTAMP = "timestamp"
 TO = "to"
 VISIBLE_MAP = "visible_map"

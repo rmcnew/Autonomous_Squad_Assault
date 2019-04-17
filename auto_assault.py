@@ -17,6 +17,7 @@
 import argparse
 import logging
 import sys
+import time
 from datetime import datetime
 from multiprocessing import Process, Queue
 
@@ -289,6 +290,7 @@ def main():
     setup_pygame()
 
     # run the simulation
+    time.sleep(1)  # wait just a moment for everything to come up
     auto_assault.run_simulation(to_sim_queue)
 
 
