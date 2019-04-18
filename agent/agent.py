@@ -28,6 +28,7 @@
 import json
 
 from shared.constants import *
+from simulation.point import Point
 from simulation.visible_map import VisibleMap
 
 
@@ -39,6 +40,7 @@ class Agent:
         self.visible_map = initial_visible_map
         self.sight_radius = sight_radius
         self.name = name
+        self.sim_messages = []
 
     def get_sim_message(self):
         # messages are serialized JSON structures, so we need to deserialize them
@@ -47,19 +49,21 @@ class Agent:
     def sim_messages_ready(self):
         return not self.to_me_queue.empty()
 
-    def receive_sim_messages(self):
-        messages = []
+    def receive_sim_message(self):
         while self.sim_messages_ready():
             message = self.get_sim_message()
             if message is not None:
-                messages.append(message)
-        return messages
+                self.sim_messages.append(message)
+        if len(self.sim_messages) > 0:
+            return self.sim_messages.pop(0)
+        else:
+            return None
 
     def put_sim_message(self, message):
         self.from_me_queue.put(message)
 
     def update_location_and_visible_map(self, visible_map_around_point):
-        self.location = visible_map_around_point[YOUR_LOCATION]
+        self.location = Point(visible_map_around_point[YOUR_LOCATION][X], visible_map_around_point[YOUR_LOCATION][Y])
         self.visible_map = VisibleMap(visible_map_around_point[GRID],
                                       visible_map_around_point[MIN_X],
                                       visible_map_around_point[MIN_Y])

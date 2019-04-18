@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from shared.constants import X, Y
 
+
 class Point:
     """Represents a point on the grid"""
     def __init__(self, x, y):
@@ -44,3 +45,7 @@ class Point:
 
     def minus_vector(self, vector):
         return Point(self.x - vector[0], self.y - vector[1])
+
+    @staticmethod
+    def from_dict(dict):
+        return Point(dict[X], dict[Y])

@@ -22,13 +22,16 @@ Y = 'y'
 
 # message strings
 ACTION = "action"
+DO_NOTHING = "do_nothing"
 ELECTION_NAME_DECLARE = "election_name_declare"  # also serves as ELECTION_BEGIN
 ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
 ELECTION_SLEEP_WAIT = 0.3
 ELECTION_WINNER_WAIT_CYCLES = 4
+FORMING_SQUAD_COLUMN_WEDGE = "forming_squad_column_wedge"
 FROM = "from"
 GRID = "grid"
+LOCATION = "location"
 LOSER_NAME = "loser_name"
 MAX_X = "max_x"
 MAX_Y = "max_y"
@@ -38,7 +41,10 @@ MIN_Y = "min_y"
 NAME = "name"
 ON_TEAM_A = "on_team_a"
 ON_TEAM_B = "on_team_b"
+READY_FOR_MOVEMENT = "ready_for_movement"
 SHUTDOWN = "shutdown"
+SQUAD_COLUMN_WEDGE_OFFSET = 5
+SQUAD_COLUMN_WEDGE_SPACING = 2
 SQUAD_LEADER = "squad_leader"
 TAKE_TURN = "take_turn"
 TEAM_A = "team_a"
@@ -54,6 +60,17 @@ WARBOT_ONLINE = "warbot_online"
 WINNER_NAME = "winner_name"
 YOUR_LOCATION = "your_location"
 YOUR_TURN = "your_turn"
+
+# warbot team states
+CONDUCT_ELECTION = "conduct_election"
+GET_TEAM_ASSIGNMENT = "get_team_assignment"
+FORM_SQUAD_COLUMN_WEDGE = "form_squad_column_wedge"
+MOVEMENT_TO_OBJECTIVE = "movement_to_objective"
+OPFOR_CONTACT = "opfor_contact"
+LIFT_AND_SHIFT_FIRE = "lift_and_shift_fire"
+SECURE_OBJECTIVE = "secure_objective"
+
+# warbot behaviors
 
 # agent actions
 MOVE_TO = "move_to"

@@ -25,25 +25,24 @@ from warbot.warbot_radio import WarbotRadio
 class Warbot(Agent):
     """Represents an autonomous robotic warrior"""
     def __init__(self, to_me_queue, from_me_queue, initial_location, initial_visible_map, name,
-                 to_this_warbot_queue, warbot_radio_broker):
+                 to_this_warbot_queue, warbot_radio_broker, objective_location, rally_point_location):
         Agent.__init__(self, to_me_queue, from_me_queue, initial_location,
                        initial_visible_map, WARBOT_VISION_DISTANCE, name)
         self.radio = WarbotRadio(self.name, to_this_warbot_queue, warbot_radio_broker)
         self.action_queue = []
         self.path = []
+        self.objective_location = objective_location
+        self.rally_point_location = rally_point_location
         self.run_simulation = True
         self.warbot_names = []
-        self.squad_leader = None
-        self.team_a_leader = None
+        self.squad_leader = None  # squad leader is also team_a leader
         self.team_a = []
         self.team_b_leader = None
         self.team_b = []
+        self.team_state = CONDUCT_ELECTION
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
-
-    def i_am_team_a_leader(self):
-        return self.team_a_leader is not None and self.team_a_leader == self.name
 
     def i_am_team_b_leader(self):
         return self.team_b_leader is not None and self.team_b_leader == self.name
@@ -56,15 +55,19 @@ class Warbot(Agent):
 
     def get_role_name(self):
         if self.i_am_squad_leader():
-            return SQUAD_LEADER
-        elif self.i_am_team_a_leader():
-            return "{} . My team is: {}".format(TEAM_A_LEADER, self.team_a)
+            return "{} . My team is: {}".format(SQUAD_LEADER, self.team_a)
         elif self.i_am_team_b_leader():
             return "{} . My team is: {}".format(TEAM_B_LEADER, self.team_b)
         elif self.i_am_on_team_a():
             return ON_TEAM_A
         elif self.i_am_on_team_b():
             return ON_TEAM_B
+
+    def get_team_index(self):
+        if self.i_am_on_team_a():
+            return self.team_a.index(self.name)
+        else:
+            return self.team_b.index(self.name)
 
     def shutdown(self):
         """Clean up resources and shutdown"""
@@ -110,6 +113,7 @@ class Warbot(Agent):
                     logging.info("{}: Received ELECTION_END message.  Election is over.  Squad leader is {}"
                                  .format(self.name, warbot_message[WINNER_NAME]))
                     self.squad_leader = warbot_message[WINNER_NAME]
+                    self.team_state = GET_TEAM_ASSIGNMENT
                     election_over = True
             else:
                 no_message_count = no_message_count + 1
@@ -119,13 +123,13 @@ class Warbot(Agent):
                 self.radio.send(election_end_message(self.name))
                 logging.info("{}: The election is over.  I am the squad leader".format(self.name))
                 self.squad_leader = self.name
+                self.team_state = GET_TEAM_ASSIGNMENT
                 election_over = True
 
     def get_team_assignment(self):
         if self.i_am_squad_leader():
             logging.debug("{}: Determining teams and sending team assignment message . . .".format(self.name))
             logging.debug("{}: Recorded warbot_names is {}".format(self.name, self.warbot_names))
-            self.team_a_leader = self.squad_leader
             self.team_a.append(self.squad_leader)
             last_added = None
             for warbot_name in self.warbot_names:
@@ -141,8 +145,9 @@ class Warbot(Agent):
                 elif last_added == TEAM_A:
                     self.team_b.append(warbot_name)
                     last_added = TEAM_B
-            self.radio.send(team_assignment_message(self.team_a_leader, self.team_a, self.team_b_leader, self.team_b))
+            self.radio.send(team_assignment_message(self.squad_leader, self.team_a, self.team_b_leader, self.team_b))
             logging.debug("{}: Team assignment message sent. ".format(self.name))
+            self.team_state = FORM_SQUAD_COLUMN_WEDGE
         else:
             logging.debug("{}: Awaiting team assignment message . . .".format(self.name))
             team_assignment_received = False
@@ -150,26 +155,66 @@ class Warbot(Agent):
                 warbot_message = self.radio.receive_message()
                 if warbot_message is not None:
                     if warbot_message[MESSAGE_TYPE] == TEAM_ASSIGNMENT:
-                        self.team_a_leader = warbot_message[TEAM_A_LEADER]
+                        self.squad_leader = warbot_message[SQUAD_LEADER]
                         self.team_a = warbot_message[TEAM_A]
                         self.team_b_leader = warbot_message[TEAM_B_LEADER]
                         self.team_b = warbot_message[TEAM_B]
                         logging.debug("{}: Received TEAM_ASSIGNMENT from squad leader.  I am {}"
                                       .format(self.name, self.get_role_name()))
                         team_assignment_received = True
+                        self.team_state = FORM_SQUAD_COLUMN_WEDGE
                 else:
                     logging.debug("{}: No team assignment message received.  Sleeping a bit . . .".format(self.name))
                     sleep(TEAM_ASSIGNMENT_SLEEP_WAIT)
 
-    def handle_warbot_messages(self):
-        warbot_message = self.radio.receive_message()
-        while warbot_message is not None:
-            logging.debug("{}: Received warbot_message: {}".format(self.name, warbot_message))
-            # more handling goes here
-            warbot_message = self.radio.receive_message()
+    def calculate_squad_column_wedge_position(self):
+        if self.i_am_squad_leader():
+            return self.rally_point_location.plus_vector((0, SQUAD_COLUMN_WEDGE_OFFSET))
+        elif self.i_am_team_b_leader():
+            return self.rally_point_location
+        else:
+            return self.location
 
-    def handle_sim_messages(self, sim_messages):
-        for sim_message in sim_messages:
+    def form_squad_column_wedge(self):
+        # logging.debug("{}: Forming squad column wedge . . .".format(self.name))
+        pass
+
+
+
+
+    def movement_to_objective(self):
+        pass
+    #     logging.debug("{}: Begin movement to objective . . .".format(self.name))
+    #     opfor_seen = False
+    #     while not opfor_seen:
+    #         if self.i_am_squad_leader():
+    #
+    #         else:
+
+
+    def do_warbot_tasks(self):
+        if self.team_state == CONDUCT_ELECTION:
+            self.conduct_election()
+        elif self.team_state == GET_TEAM_ASSIGNMENT:
+            self.get_team_assignment()
+        elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
+            self.form_squad_column_wedge()
+        elif self.team_state == MOVEMENT_TO_OBJECTIVE:
+            self.movement_to_objective()
+
+    def determine_turn_action(self):
+        if self.team_state == CONDUCT_ELECTION:
+            return take_turn_do_nothing_message(self.name)
+        elif self.team_state == GET_TEAM_ASSIGNMENT:
+            return take_turn_do_nothing_message(self.name)
+        elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
+            return take_turn_move_message(self.name, self.location.plus_vector((0, -1)))
+        elif self.team_state == MOVEMENT_TO_OBJECTIVE:
+            return take_turn_do_nothing_message(self.name)
+
+    def do_sim_tasks(self):
+        sim_message = self.receive_sim_message()
+        if sim_message is not None:
             # logging.debug("{}: Received sim_message: {}".format(self.name, sim_message))
             if sim_message[MESSAGE_TYPE] == SHUTDOWN:
                 logging.debug("{} received shutdown message".format(self.name))
@@ -177,22 +222,18 @@ class Warbot(Agent):
             elif sim_message[MESSAGE_TYPE] == YOUR_TURN:
                 self.update_location_and_visible_map(sim_message[VISIBLE_MAP])
                 self.visible_map.scan()
+                turn_action = self.determine_turn_action()
                 logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
-                self.put_sim_message(take_turn_message(self.name, "Hello!"))
+                self.put_sim_message(turn_action)
 
     def run(self):
         # notify other warbots that this warbot is operational
         self.radio.send(warbot_online_message(self.name))
-        # conduct leader election and organize teams
-        self.conduct_election()
-        self.get_team_assignment()
         # primary action loop
         while self.run_simulation:
             # get and handle warbot messages
-            self.handle_warbot_messages()
-
+            self.do_warbot_tasks()
             # get and handle simulation messages
-            sim_messages = self.receive_sim_messages()
-            self.handle_sim_messages(sim_messages)
+            self.do_sim_tasks()
         self.shutdown()
 

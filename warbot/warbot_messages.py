@@ -56,12 +56,28 @@ def election_end_message(my_name):
     return json.dumps(message)
 
 
-def team_assignment_message(team_a_leader, team_a, team_b_leader, team_b):
+def team_assignment_message(squad_leader, team_a, team_b_leader, team_b):
     """Message sent by leader that assigns warbots to teams"""
     message = {MESSAGE_TYPE: TEAM_ASSIGNMENT,
-               TEAM_A_LEADER: team_a_leader,
+               SQUAD_LEADER: squad_leader,
                TEAM_A: team_a,
                TEAM_B_LEADER: team_b_leader,
                TEAM_B: team_b,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def forming_squad_column_wedge_message(name):
+    """Message sent by warbots that are moving to form squad column wedge"""
+    message = {MESSAGE_TYPE: FORMING_SQUAD_COLUMN_WEDGE,
+               FROM: name,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def ready_for_movement_message(name):
+    """Message sent by warbot that is in position and ready for movement"""
+    message = {MESSAGE_TYPE: READY_FOR_MOVEMENT,
+               FROM: name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)

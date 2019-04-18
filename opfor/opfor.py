@@ -39,4 +39,4 @@ class Opfor(Agent):
             if message[MESSAGE_TYPE] == SHUTDOWN:
                 run_simulation = False
             logging.debug("{}: Received sim message".format(self.name))
-            self.put_sim_message(take_turn_message(self.name, "Hello from {}".format(self.name)))
+            self.put_sim_message(take_turn_do_nothing_message(self.name))

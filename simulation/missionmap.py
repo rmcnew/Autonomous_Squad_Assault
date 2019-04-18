@@ -13,6 +13,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import logging
 from random import randint
 
 from noise import pnoise3
@@ -51,19 +52,20 @@ class MissionMap(AbstractMap):
         self.grid[self.rally_point_location] = [Drawable.RALLY_POINT]
 
     def generate_warbot_locations(self, warbot_count):
-        self.warbot_locations = []
+        self.warbot_locations = {}
         warbot_index = 1
         while warbot_index <= warbot_count:
             # put bots near rally point
             random_point = self.get_random_unoccupied_location_near_point(
                 self.rally_point_location,
                 WARBOT_GENERATE_RADIUS)
-            self.grid[random_point] = [Drawable[WARBOT_PREFIX + str(warbot_index)]]
-            self.warbot_locations.append(random_point)
+            warbot_name = WARBOT_PREFIX + str(warbot_index)
+            self.grid[random_point] = [Drawable[warbot_name], Drawable.DIRT]
+            self.warbot_locations[warbot_name] = random_point
             warbot_index = warbot_index + 1
 
     def generate_opfor_locations(self, opfor_count):
-        self.opfor_locations = []
+        self.opfor_locations = {}
         opfor_index = 1
         while opfor_index <= opfor_count:
             # put opfor near objective
@@ -71,17 +73,19 @@ class MissionMap(AbstractMap):
                 self.objective_location,
                 OPFOR_GENERATE_RADIUS)
             # print ("random_point: {} for drawable: {}".format(random_point, Drawable["OPFOR_" + str(opfor_index)]))
-            self.grid[random_point] = [Drawable[OPFOR_PREFIX + str(opfor_index)]]
-            self.opfor_locations.append(random_point)
+            opfor_name = OPFOR_PREFIX + str(opfor_index)
+            self.grid[random_point] = [Drawable[opfor_name], Drawable.DIRT]
+            self.opfor_locations[opfor_name] = random_point
             opfor_index = opfor_index + 1
 
     def generate_civilian_locations(self, civilian_count):
-        self.civilian_locations = []
+        self.civilian_locations = {}
         civilian_index = 1
         while civilian_index <= civilian_count:
             random_point = self.get_random_unoccupied_location()
-            self.grid[random_point] = [Drawable[CIVILIAN_PREFIX + str(civilian_index)]]
-            self.civilian_locations.append(random_point)
+            civilian_name = CIVILIAN_PREFIX + str(civilian_index)
+            self.grid[random_point] = [Drawable[civilian_name], Drawable.DIRT]
+            self.civilian_locations[civilian_name] = random_point
             civilian_index = civilian_index + 1
 
     def generate_terrain(self, seed):
@@ -166,4 +170,31 @@ class MissionMap(AbstractMap):
                 MIN_X: minus.x,
                 MIN_Y: minus.y}
 
+    def move_agent(self, agent_name, new_location):
+        logging.debug("Moving {} to new location: {}".format(agent_name, new_location))
+        if agent_name.startswith(WARBOT_PREFIX):
+            agent_location = self.warbot_locations[agent_name]
+            logging.debug("{} current location is {}".format(agent_name, agent_location))
+            if not self.is_occupied(new_location):
+                self.warbot_locations[agent_name] = new_location
+                # get the current location and remove the warbot
+                logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))
+                drawables_at_agent_location = self.grid[agent_location]
+                drawables_at_agent_location.remove(Drawable[agent_name])
+                self.grid[agent_location] = drawables_at_agent_location
+                logging.debug("{} now contains: {}".format(agent_location, self.grid[agent_location]))
+                # get the new location and add the warbot
+                logging.debug("{} currently contains: {}".format(new_location, self.grid[new_location]))
+                drawables_at_new_location = self.grid[new_location]
+                drawables_at_new_location.insert(0, Drawable[agent_name])
+                self.grid[new_location] = drawables_at_new_location
+                logging.debug("{} now contains: {}".format(new_location, self.grid[new_location]))
 
+        elif agent_name.startswith(OPFOR_PREFIX):
+            agent_location = self.opfor_locations[agent_name]
+            if not self.is_occupied(new_location):
+                self.opfor_locations[agent_name] = new_location
+                drawables_at_agent_location = self.grid[agent_location]
+                if len(drawables_at_agent_location) > 0:
+                    drawables_at_agent_location.remove(Drawable[agent_name])
+                self.grid[new_location] = self.grid[new_location].append(Drawable[agent_name])

@@ -55,4 +55,3 @@ class Grid:
             # print("raw_value is {}".format(raw_value))
         # print("Setting {} to {}".format(point, raw_value))
         self.array[point.x][point.y] = raw_value
-

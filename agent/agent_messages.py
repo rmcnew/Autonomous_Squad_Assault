@@ -31,21 +31,31 @@ def your_turn_message(visible_map):
     return json.dumps(message)
 
 
-# agent actions
-def move_to(location):
-    return {MOVE_TO: location.to_dict()}
-
-
-def fire_at(location):
-    return {FIRE_AT: location.to_dict()}
-
-
-# take turn message
-def take_turn_message(name, action):
-    """Message that the agent sends to take a turn"""
+def take_turn_do_nothing_message(name):
+    """Message that the agent sends to take a turn, but take no action"""
     message = {MESSAGE_TYPE: TAKE_TURN,
                FROM: name,
-               ACTION: action,
+               ACTION: DO_NOTHING,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def take_turn_move_message(name, location):
+    """Message that the agent sends to take a turn by moving"""
+    message = {MESSAGE_TYPE: TAKE_TURN,
+               FROM: name,
+               ACTION: MOVE_TO,
+               LOCATION: location.to_dict(),
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def take_turn_fire_message(name, location):
+    """Message that the agent sends to take a turn by firing a weapon"""
+    message = {MESSAGE_TYPE: TAKE_TURN,
+               FROM: name,
+               ACTION: FIRE_AT,
+               LOCATION: location.to_dict(),
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 

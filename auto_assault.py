@@ -29,6 +29,7 @@ from graphics.pygame_constants import *
 from opfor.opfor import Opfor
 from simulation.drawable import Drawable
 from simulation.missionmap import MissionMap
+from simulation.point import Point
 from warbot.warbot import Warbot
 from warbot.warbot_radio_broker import WarbotRadioBroker
 
@@ -46,16 +47,15 @@ class AutoAssault:
         self.warbot_radio_broker_process = Process(target=self.warbot_radio_broker.run)
         # create containers for child processes and objects
         self.processes = []
-        self.warbots = []
-        self.opfors = []
-        self.agents = []  # includes all live warbots and opfors
+        self.warbots = []  # locations for warbots and opfor are updated in the child processes and mission_map,
+        self.opfors = []   # but not in these objects
         self.civilians = []  # civilians are not agents (no child processes)
 
 # simulation setup methods
     def create_warbots(self, to_sim_queue):
         """Create warbot objects and associated child processes"""
         logging.debug("Creating {} warbots".format(len(self.mission_map.warbot_locations)))
-        for location in self.mission_map.warbot_locations:
+        for location in self.mission_map.warbot_locations.values():
             to_queue = Queue()
             self.to_agent_queues.append(to_queue)
             visible_map = self.mission_map.get_visible_map_around_point(location, WARBOT_VISION_DISTANCE)
@@ -63,16 +63,16 @@ class AutoAssault:
             logging.info("Creating warbot {} at location {}".format(name, location))
             to_this_warbot_queue = Queue()
             warbot = Warbot(to_queue, to_sim_queue, location, visible_map,
-                            name, to_this_warbot_queue, self.warbot_radio_broker)
+                            name, to_this_warbot_queue, self.warbot_radio_broker,
+                            self.mission_map.objective_location, self.mission_map.rally_point_location)
             self.warbots.append(warbot)
-            self.agents.append(warbot)
             process = Process(target=warbot.run)
             self.processes.append(process)
 
     def create_opfor(self, to_sim_queue):
         """Create OPFOR objects and associated child processes"""
         logging.debug("Creating {} OPFOR".format(len(self.mission_map.opfor_locations)))
-        for location in self.mission_map.opfor_locations:
+        for location in self.mission_map.opfor_locations.values():
             to_queue = Queue()
             self.to_agent_queues.append(to_queue)
             visible_map = self.mission_map.get_visible_map_around_point(location, OPFOR_VISION_DISTANCE)
@@ -80,7 +80,6 @@ class AutoAssault:
             logging.info("Creating OPFOR {} at location {}".format(name, location))
             opfor = Opfor(to_queue, to_sim_queue, location, visible_map, name)
             self.opfors.append(opfor)
-            self.agents.append(opfor)
             process = Process(target=opfor.run)
             self.processes.append(process)
 
@@ -97,6 +96,13 @@ class AutoAssault:
             elif event.type == KEYDOWN and (event.key == K_q or event.key == K_ESCAPE):
                 self.terminate()
 
+    def get_color(self, mission_map, x, y):
+        drawables = mission_map.grid[Point(x, y)]
+        if len(drawables) >= 1:
+            return drawables[0].color
+        else:
+            return Colors.BLACK, Colors.BLACK
+
     def draw_grid(self, mission_map):
         """Draw the map grid via pygame"""
         # draw gridlines
@@ -108,7 +114,7 @@ class AutoAssault:
         for x in range(0, mission_map.grid.width):
             for y in range(0, mission_map.grid.height):
                 if mission_map.grid.array[x][y] != 0:  # use the internal array directly for speed
-                    (lineColor, fillColor) = Drawable(mission_map.grid.array[x][y]).color
+                    (lineColor, fillColor) = self.get_color(mission_map, x, y)
                     cell_x = x * CELL_SIZE
                     cell_y = y * CELL_SIZE + TOP_BUFFER
                     rect = pygame.Rect(cell_x, cell_y, CELL_SIZE, CELL_SIZE)
@@ -203,6 +209,12 @@ class AutoAssault:
         """Update game state (mission_map) from agent subprocess messages"""
         for message in messages_received:
             logging.debug("Simulation:  Received message: {}".format(message))
+            if message[MESSAGE_TYPE] == TAKE_TURN:
+                agent = message[FROM]
+                action = message[ACTION]
+                if action == MOVE_TO:
+                    location = Point.from_dict(message[LOCATION])
+                    self.mission_map.move_agent(agent, location)
 
     def start_child_processes(self):
         """Start child processes running for agents and warbot radio broker process"""
@@ -223,14 +235,18 @@ class AutoAssault:
             self.check_for_quit()
             # give agents updated simulation state and await their actions for this turn
             messages_received = []
-            for agent in self.agents:
-                agent_location = agent.location
-                visible_map = self.mission_map.get_visible_map_around_point(agent_location, agent.sight_radius)
-                agent.to_me_queue.put(your_turn_message(visible_map))
+            for warbot in self.warbots:
+                warbot_location = self.mission_map.warbot_locations[warbot.name]
+                visible_map = self.mission_map.get_visible_map_around_point(warbot_location, warbot.sight_radius)
+                warbot.to_me_queue.put(your_turn_message(visible_map))
+            for opfor in self.opfors:
+                opfor_location = self.mission_map.opfor_locations[opfor.name]
+                visible_map = self.mission_map.get_visible_map_around_point(opfor_location, opfor.sight_radius)
+                opfor.to_me_queue.put(your_turn_message(visible_map))
             # await "take_turn" response messages
             logging.debug("Waiting on responses . . .")
             while len(messages_received) < live_process_count:
-                message = to_sim_queue.get()
+                message = json.loads(to_sim_queue.get())
                 messages_received.append(message)
             logging.debug("Done waiting on responses.  Updating mission_map")
             # update mission_map
@@ -245,9 +261,9 @@ def parse_arguments():
     """Parse the command line arguments"""
     # setup command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', default=5, type=int, choices=range(1, 12),
+    parser.add_argument('-r', default=5, type=int, choices=range(1, 11),
                         help='number of rifle warbots (1 to 11)')
-    parser.add_argument('-e', default=5, type=int, choices=range(1, 12),
+    parser.add_argument('-e', default=5, type=int, choices=range(1, 11),
                         help='number of enemies (1 to 11)')
     parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
                         help='number of civilians (0 to 20)')
