@@ -169,11 +169,11 @@ class Warbot(Agent):
                     logging.debug("{}: No team assignment message received.  Sleeping a bit . . .".format(self.name))
                     sleep(TEAM_ASSIGNMENT_SLEEP_WAIT)
 
-    def calculate_squad_column_wedge_position(self):
-        logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
+    def calculate_traveling_squad_column_wedge_position(self):
+        logging.debug("calculate_traveling_squad_column_wedge_position: visible_map.warbot_locations is {}"
                       .format(self.visible_map.warbot_locations))
         if self.i_am_squad_leader():
-            return self.rally_point_location.plus_vector(SCW_SQUAD_LEADER_OFFSET)
+            return self.location
         elif self.i_am_team_b_leader():
             return self.visible_map.warbot_locations[self.squad_leader].plus_vector(SCW_TEAM_B_LEADER_OFFSET)
         elif self.i_am_on_team_a():  # team_a starts on left
@@ -201,17 +201,53 @@ class Warbot(Agent):
                 offset = SCW_B4_OFFSET
             return self.visible_map.warbot_locations[self.team_b_leader].plus_vector(offset)
 
+    def calculate_rally_point_squad_column_wedge_position(self):
+        logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
+                      .format(self.visible_map.warbot_locations))
+        squad_leader_position = self.rally_point_location.plus_vector(SCW_SQUAD_LEADER_OFFSET)
+        if self.i_am_squad_leader():
+            return squad_leader_position
+        elif self.i_am_team_b_leader():
+            return squad_leader_position.plus_vector(SCW_TEAM_B_LEADER_OFFSET)
+        elif self.i_am_on_team_a():  # team_a starts on left
+            team_index = self.get_team_index()
+            offset = None
+            if team_index == 1:
+                offset = SCW_A1_OFFSET
+            elif team_index == 2:
+                offset = SCW_A2_OFFSET
+            elif team_index == 3:
+                offset = SCW_A3_OFFSET
+            elif team_index == 4:
+                offset = SCW_A4_OFFSET
+            return squad_leader_position.plus_vector(offset)
+        elif self.i_am_on_team_b():  # team_b starts on right
+            offset = None
+            team_index = self.get_team_index()
+            if team_index == 1:
+                offset = SCW_B1_OFFSET
+            elif team_index == 2:
+                offset = SCW_B2_OFFSET
+            elif team_index == 3:
+                offset = SCW_B3_OFFSET
+            elif team_index == 4:
+                offset = SCW_B4_OFFSET
+            return squad_leader_position.plus_vector(SCW_TEAM_B_LEADER_OFFSET).plus_vector(offset)
+
     def form_squad_column_wedge(self):
         if self.movement_target is None:
             logging.debug("{}: Determining position in squad column wedge . . .".format(self.name))
-            self.movement_target = self.calculate_squad_column_wedge_position()
+            self.movement_target = self.calculate_rally_point_squad_column_wedge_position()
             logging.debug("{}: My squad column wedge position is: {}.  Starting A* path finding from {} to {}"
                           .format(self.name, self.movement_target, self.location, self.movement_target))
             self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
             logging.debug("{}: Found A* path from {} to {} as {}"
                           .format(self.name, self.location, self.movement_target, self.path))
-        else:
+        elif self.location != self.movement_target:
             logging.debug("{} en route to squad column wedge position: {}".format(self.name, self.movement_target))
+        elif self.location == self.movement_target:
+            logging.debug("{} in squad column wedge position.  Notifying squad leader".format(self.name))
+            self.radio.send(ready_for_movement_message(self.name))
 
     def movement_to_objective(self):
         pass
@@ -229,9 +265,6 @@ class Warbot(Agent):
             self.get_team_assignment()
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
             self.form_squad_column_wedge()
-            if self.location == self.movement_target:
-                logging.debug("{} in squad column wedge position.  Notifying squad leader".format(self.name))
-                self.radio.send(ready_for_movement_message(self.name))
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             self.movement_to_objective()
 
