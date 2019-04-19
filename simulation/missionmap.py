@@ -16,6 +16,7 @@
 import logging
 from random import randint
 
+from math import pow, sqrt
 from noise import pnoise3
 
 # map contains methods to create the elements that make up the simulated
@@ -138,7 +139,8 @@ class MissionMap(AbstractMap):
                 return random_point
 
     def get_random_lower_location(self):
-        return Point(randint(0, self.grid.width - 1), randint((0.75 * self.grid.height),  self.grid.height - 1))
+        return Point(randint(0, self.grid.width - 1),                                           # X
+                     randint(int((0.75 * self.grid.height)),  int((0.85 * self.grid.height))))  # Y
 
     def get_random_location_near_point(self, point, radius):
         while True:
@@ -162,9 +164,10 @@ class MissionMap(AbstractMap):
                 return random_point
 
     def get_visible_map_around_point(self, point, distance):
+        # logging.debug("Getting rectangle of size {} around point {}".format(distance, point))
         minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
         plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
-        # print("minus is {}, plus is {}".format(minus, plus))
+        # logging.debug("minus is {}, plus is {}".format(minus, plus))
         return {YOUR_LOCATION: point.to_dict(),
                 GRID: self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1].tolist(),
                 MIN_X: minus.x,
@@ -174,21 +177,21 @@ class MissionMap(AbstractMap):
         logging.debug("Moving {} to new location: {}".format(agent_name, new_location))
         if agent_name.startswith(WARBOT_PREFIX):
             agent_location = self.warbot_locations[agent_name]
-            logging.debug("{} current location is {}".format(agent_name, agent_location))
+            # logging.debug("{} current location is {}".format(agent_name, agent_location))
             if not self.is_occupied(new_location):
                 self.warbot_locations[agent_name] = new_location
                 # get the current location and remove the warbot
-                logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))
+                # logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))
                 drawables_at_agent_location = self.grid[agent_location]
                 drawables_at_agent_location.remove(Drawable[agent_name])
                 self.grid[agent_location] = drawables_at_agent_location
-                logging.debug("{} now contains: {}".format(agent_location, self.grid[agent_location]))
+                # logging.debug("{} now contains: {}".format(agent_location, self.grid[agent_location]))
                 # get the new location and add the warbot
-                logging.debug("{} currently contains: {}".format(new_location, self.grid[new_location]))
+                # logging.debug("{} currently contains: {}".format(new_location, self.grid[new_location]))
                 drawables_at_new_location = self.grid[new_location]
                 drawables_at_new_location.insert(0, Drawable[agent_name])
                 self.grid[new_location] = drawables_at_new_location
-                logging.debug("{} now contains: {}".format(new_location, self.grid[new_location]))
+                # logging.debug("{} now contains: {}".format(new_location, self.grid[new_location]))
 
         elif agent_name.startswith(OPFOR_PREFIX):
             agent_location = self.opfor_locations[agent_name]
@@ -198,3 +201,54 @@ class MissionMap(AbstractMap):
                 if len(drawables_at_agent_location) > 0:
                     drawables_at_agent_location.remove(Drawable[agent_name])
                 self.grid[new_location] = self.grid[new_location].append(Drawable[agent_name])
+
+    def is_occupied(self, point):
+        for drawable in self.grid[point]:
+            if drawable in AbstractMap.occupied:
+                return True
+        return False
+
+    def is_navigable(self, point):
+        drawables = self.grid[point]
+        return Drawable.WATER not in drawables
+
+    def on_map(self, point):
+        return 0 <= point.x < self.grid.width and 0 <= point.y < self.grid.height
+
+    def empty(self, point):
+        return len(self.grid[point]) == 0
+
+    def distance(self, point_a, point_b):
+        return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
+
+    def can_enter(self, point):
+        return self.on_map(point) and not self.is_occupied(point)
+
+    def can_enter_route_plan(self, point):
+        return self.on_map(point) and self.is_navigable(point)
+
+    def normalize_point(self, point):
+        point_x = point.x
+        if point_x < 0:
+            point_x = 0
+        elif point_x >= self.grid.width:
+            point_x = self.grid.width - 1
+
+        point_y = point.y
+        if point_y < 0:
+            point_y = 0
+        elif point_y >= self.grid.height:
+            point_y = self.grid.height - 1
+        # only create a new point if needed
+        if point_x == point.x and point_y == point.y:
+            return point
+        else:  # otherwise return the existing point
+            return Point(point_x, point_y)
+
+    def get_named_drawable_at_location(self, location, prefix):
+        if self.on_map(location):
+            for drawable in self.grid[location]:
+                if drawable.name.startswith(prefix):
+                    return drawable.name
+        else:
+            return None

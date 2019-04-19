@@ -14,13 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from math import pow, sqrt
-
 # map contains methods to create the elements that make up the simulated
 # map where the autonomous infantry squad operates
 from simulation.drawable import Drawable
 from simulation.grid import Grid
-from simulation.point import Point
 
 
 class AbstractMap:
@@ -78,63 +75,6 @@ class AbstractMap:
         self.rally_point_location = None
         self.warbot_locations = None
         self.civilian_locations = None
-        self.x_offset = 0
-        self.y_offset = 0
 
-    def unoffset_point(self, point):
-        return point.minus_vector((self.x_offset, self.y_offset))
-
-    def offset_point(self, point):
-        return point.plus_vector((self.x_offset, self.y_offset))
-
-    def is_occupied(self, point):
-        adjusted_point = self.unoffset_point(point)
-        for drawable in self.grid[adjusted_point]:
-            if drawable in AbstractMap.occupied:
-                return True
-        return False
-
-    def on_map(self, point):
-        adjusted_point = self.unoffset_point(point)
-        return 0 <= adjusted_point.x < self.grid.width and 0 <= adjusted_point.y < self.grid.height
-
-    def empty(self, point):
-        adjusted_point = self.unoffset_point(point)
-        return len(self.grid[adjusted_point]) == 0
-
-    def distance(self, point_a, point_b):
-        return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
-
-    def can_enter(self, point):
-        adjusted_point = self.unoffset_point(point)
-        return self.on_map(adjusted_point) and not self.is_occupied(adjusted_point)
-
-    def normalize_point(self, point):
-        adjusted_point = self.unoffset_point(point)
-        point_x = adjusted_point.x
-        if point_x < 0:
-            point_x = 0
-        elif point_x >= self.grid.width:
-            point_x = self.grid.width - 1
-
-        point_y = adjusted_point.y
-        if point_y < 0:
-            point_y = 0
-        elif point_y >= self.grid.height:
-            point_y = self.grid.height - 1
-        # only create a new point if needed
-        if point_x == adjusted_point.x and point_y == adjusted_point.y:
-            return point
-        else:  # otherwise return the existing point
-            return self.offset_point(Point(point_x, point_y))
-
-    def get_named_drawable_at_location(self, location, prefix):
-        adjusted_location = self.unoffset_point(location)
-        if self.on_map(adjusted_location):
-            for drawable in self.grid[adjusted_location]:
-                if drawable.name.startswith(prefix):
-                    return drawable.name
-        else:
-            return None
 
 

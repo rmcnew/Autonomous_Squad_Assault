@@ -54,7 +54,7 @@ You can specify how many warbots you want in the simulation using the -r command
 
 python3 auto_assault.py -r N
 
-where N is the desired number of warbots.  You can specify between 1 and 10 warbots.  The default is 5.
+where N is the desired number of warbots.  You can specify between 2 and 10 warbots.  The default is 5.
 
 
 You can specify how many opposing force soldiers (OPFOR) you want in the simulation using the -e command line flag:

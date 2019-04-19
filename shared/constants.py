@@ -70,6 +70,25 @@ OPFOR_CONTACT = "opfor_contact"
 LIFT_AND_SHIFT_FIRE = "lift_and_shift_fire"
 SECURE_OBJECTIVE = "secure_objective"
 
+# -- warbot squad column wedge offsets -- #
+# squad_leader offset is only for initial squad column wedge formation.
+# team_b_leader offset is from the squad_leader.
+# Team member offsets are from the respective team leader.
+# This allows teams to travel as wedges and
+# the squad to travel in a squad column wedge.
+SCW_SQUAD_LEADER_OFFSET = (0, -5)  # from rally_point
+SCW_TEAM_B_LEADER_OFFSET = (0, 5)  # from squad_leader
+SCW_A1_OFFSET = (-2, 2)  # from team leader
+SCW_A2_OFFSET = (2, 2)
+SCW_A3_OFFSET = (-4, 4)
+SCW_A4_OFFSET = (4, 4)
+# b_team positions mirror team_a positions so
+# that a sparse squad still has good positioning
+SCW_B1_OFFSET = (2, 2)
+SCW_B2_OFFSET = (-2, 2)
+SCW_B3_OFFSET = (4, 4)
+SCW_B4_OFFSET = (-4, 4)
+
 # warbot behaviors
 
 # agent actions
@@ -82,13 +101,13 @@ OPFOR_PREFIX = "OPFOR_"
 CIVILIAN_PREFIX = "CIV_"
 
 # opfor generation radius away from objective
-OPFOR_GENERATE_RADIUS = 6  # type: int
+OPFOR_GENERATE_RADIUS = 5  # type: int
 
 # opfor vision around self
 OPFOR_VISION_DISTANCE = 8  # type: int
 
 # warbot generation radius away from rally point
-WARBOT_GENERATE_RADIUS = 6  # type: int
+WARBOT_GENERATE_RADIUS = 5  # type: int
 
 # warbot vision around self  (better than human due to high resolution camera)
 WARBOT_VISION_DISTANCE = 12  # type: int

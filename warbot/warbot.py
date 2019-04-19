@@ -18,6 +18,7 @@ from time import sleep
 
 from agent.agent import Agent
 from agent.agent_messages import *
+from simulation import a_star
 from warbot.warbot_messages import *
 from warbot.warbot_radio import WarbotRadio
 
@@ -40,6 +41,7 @@ class Warbot(Agent):
         self.team_b_leader = None
         self.team_b = []
         self.team_state = CONDUCT_ELECTION
+        self.movement_target = None
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -146,7 +148,7 @@ class Warbot(Agent):
                     self.team_b.append(warbot_name)
                     last_added = TEAM_B
             self.radio.send(team_assignment_message(self.squad_leader, self.team_a, self.team_b_leader, self.team_b))
-            logging.debug("{}: Team assignment message sent. ".format(self.name))
+            logging.debug("{}: Team assignment message sent.  I am {}".format(self.name, self.get_role_name()))
             self.team_state = FORM_SQUAD_COLUMN_WEDGE
         else:
             logging.debug("{}: Awaiting team assignment message . . .".format(self.name))
@@ -168,19 +170,48 @@ class Warbot(Agent):
                     sleep(TEAM_ASSIGNMENT_SLEEP_WAIT)
 
     def calculate_squad_column_wedge_position(self):
+        logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
+                      .format(self.visible_map.warbot_locations))
         if self.i_am_squad_leader():
-            return self.rally_point_location.plus_vector((0, SQUAD_COLUMN_WEDGE_OFFSET))
+            return self.rally_point_location.plus_vector(SCW_SQUAD_LEADER_OFFSET)
         elif self.i_am_team_b_leader():
-            return self.rally_point_location
-        else:
-            return self.location
+            return self.visible_map.warbot_locations[self.squad_leader].plus_vector(SCW_TEAM_B_LEADER_OFFSET)
+        elif self.i_am_on_team_a():  # team_a starts on left
+            team_index = self.get_team_index()
+            offset = None
+            if team_index == 1:
+                offset = SCW_A1_OFFSET
+            elif team_index == 2:
+                offset = SCW_A2_OFFSET
+            elif team_index == 3:
+                offset = SCW_A3_OFFSET
+            elif team_index == 4:
+                offset = SCW_A4_OFFSET
+            return self.visible_map.warbot_locations[self.squad_leader].plus_vector(offset)
+        elif self.i_am_on_team_b():  # team_b starts on right
+            offset = None
+            team_index = self.get_team_index()
+            if team_index == 1:
+                offset = SCW_B1_OFFSET
+            elif team_index == 2:
+                offset = SCW_B2_OFFSET
+            elif team_index == 3:
+                offset = SCW_B3_OFFSET
+            elif team_index == 4:
+                offset = SCW_B4_OFFSET
+            return self.visible_map.warbot_locations[self.team_b_leader].plus_vector(offset)
 
     def form_squad_column_wedge(self):
-        # logging.debug("{}: Forming squad column wedge . . .".format(self.name))
-        pass
-
-
-
+        if self.movement_target is None:
+            logging.debug("{}: Determining position in squad column wedge . . .".format(self.name))
+            self.movement_target = self.calculate_squad_column_wedge_position()
+            logging.debug("{}: My squad column wedge position is: {}.  Starting A* path finding from {} to {}"
+                          .format(self.name, self.movement_target, self.location, self.movement_target))
+            self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+            logging.debug("{}: Found A* path from {} to {} as {}"
+                          .format(self.name, self.location, self.movement_target, self.path))
+        else:
+            logging.debug("{} en route to squad column wedge position: {}".format(self.name, self.movement_target))
 
     def movement_to_objective(self):
         pass
@@ -191,7 +222,6 @@ class Warbot(Agent):
     #
     #         else:
 
-
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
             self.conduct_election()
@@ -199,6 +229,9 @@ class Warbot(Agent):
             self.get_team_assignment()
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
             self.form_squad_column_wedge()
+            if self.location == self.movement_target:
+                logging.debug("{} in squad column wedge position.  Notifying squad leader".format(self.name))
+                self.radio.send(ready_for_movement_message(self.name))
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             self.movement_to_objective()
 
@@ -208,7 +241,10 @@ class Warbot(Agent):
         elif self.team_state == GET_TEAM_ASSIGNMENT:
             return take_turn_do_nothing_message(self.name)
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
-            return take_turn_move_message(self.name, self.location.plus_vector((0, -1)))
+            if len(self.path) > 0:
+                return take_turn_move_message(self.name, self.path.pop(0))
+            else:
+                return take_turn_do_nothing_message(self.name)
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             return take_turn_do_nothing_message(self.name)
 
@@ -223,7 +259,8 @@ class Warbot(Agent):
                 self.update_location_and_visible_map(sim_message[VISIBLE_MAP])
                 self.visible_map.scan()
                 turn_action = self.determine_turn_action()
-                logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
+                # logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
+                logging.debug("{} taking action: {}".format(self.name, turn_action))
                 self.put_sim_message(turn_action)
 
     def run(self):
@@ -235,5 +272,6 @@ class Warbot(Agent):
             self.do_warbot_tasks()
             # get and handle simulation messages
             self.do_sim_tasks()
+            sleep(0.5)
         self.shutdown()
 

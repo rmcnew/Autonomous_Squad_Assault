@@ -25,9 +25,41 @@ class VisibleMap(AbstractMap):
         self.grid.import_array(array)
         self.x_offset = x_offset
         self.y_offset = y_offset
-        self.opfor_locations = []
-        self.warbot_locations = []
-        self.civilian_locations = []
+        self.opfor_locations = {}
+        self.warbot_locations = {}
+        self.civilian_locations = {}
+
+    def unoffset_point(self, point):
+        # logging.debug("Underlying grid dimensions: width={}, height={}. x_offset={}, y_offset={}. Requested point: {}"
+        #              .format(self.grid.width, self.grid.height, self.x_offset, self.y_offset, point))
+        adjusted_point = point.minus_vector((self.x_offset, self.y_offset))
+        # logging.debug("adjusted_point is {}".format(adjusted_point))
+        return adjusted_point
+
+    def offset_point(self, point):
+        return point.plus_vector((self.x_offset, self.y_offset))
+
+    def is_occupied(self, point):
+        adjusted_point = self.unoffset_point(point)
+        for drawable in self.grid[adjusted_point]:
+            if drawable in AbstractMap.occupied:
+                return True
+        return False
+
+    def is_navigable(self, point):
+        adjusted_point = self.unoffset_point(point)
+        drawables = self.grid[adjusted_point]
+        return Drawable.WATER not in drawables
+
+    def on_map(self, point):
+        adjusted_point = self.unoffset_point(point)
+        return 0 <= adjusted_point.x < self.grid.width and 0 <= adjusted_point.y < self.grid.height
+
+    def can_enter(self, point):
+        return self.on_map(point) and not self.is_occupied(point)
+
+    def can_enter_route_plan(self, point):
+        return self.on_map(point) and self.is_navigable(point)
 
     def scan(self):
         for x in range(self.grid.width):
@@ -36,12 +68,12 @@ class VisibleMap(AbstractMap):
                 drawables = self.grid[current_point]
                 for drawable in drawables:
                     if drawable.value == Drawable.OBJECTIVE:
-                        self.objective_location = current_point
+                        self.objective_location = self.offset_point(current_point)
                     elif drawable.value == Drawable.RALLY_POINT:
-                        self.rally_point_location = current_point
+                        self.rally_point_location = self.offset_point(current_point)
                     elif drawable.name.startswith(WARBOT_PREFIX):
-                        self.warbot_locations.append(current_point)
+                        self.warbot_locations[drawable.name] = self.offset_point(current_point)
                     elif drawable.name.startswith(OPFOR_PREFIX):
-                        self.opfor_locations.append(current_point)
+                        self.opfor_locations[drawable.name] = self.offset_point(current_point)
                     elif drawable.name.startswith(CIVILIAN_PREFIX):
-                        self.civilian_locations.append(current_point)
+                        self.civilian_locations[drawable.name] = self.offset_point(current_point)

@@ -29,17 +29,18 @@ START = None
 END = None
 
 
-def get_enterable_adjacent_locations(map, location):
+def get_enterable_adjacent_locations(my_map, location):
     locations = []
     for direction in Direction:
-        candidate = location.plus(direction)
-        if map.can_enter(candidate):
+        candidate = location.plus_direction(direction)
+        if my_map.can_enter_route_plan(candidate):
             locations.append(candidate)
+    # logging.debug("enterable locations around {} are: {}".format(location, locations))
     return locations
 
 
 # use A* algorithm to find a path 
-def find_path(grid, from_location, to_location):
+def find_path(my_map, from_location, to_location):
     from_node = Node(from_location, 0, 0, START)
     to_node = Node(to_location, 0, 0, END)
 
@@ -73,7 +74,7 @@ def find_path(grid, from_location, to_location):
             return path[::-1]  # reverse the path
 
         # otherwise, get adjacent locations
-        adjacent_locations = get_enterable_adjacent_locations(grid, current_node.location)
+        adjacent_locations = get_enterable_adjacent_locations(my_map, current_node.location)
 
         # create nodes for the adjacent locations
         for adjacent_location in adjacent_locations:

@@ -261,10 +261,10 @@ def parse_arguments():
     """Parse the command line arguments"""
     # setup command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', default=5, type=int, choices=range(1, 11),
-                        help='number of rifle warbots (1 to 11)')
+    parser.add_argument('-r', default=5, type=int, choices=range(2, 11),
+                        help='number of rifle warbots (2 to 10)')
     parser.add_argument('-e', default=5, type=int, choices=range(1, 11),
-                        help='number of enemies (1 to 11)')
+                        help='number of enemies (1 to 10)')
     parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
                         help='number of civilians (0 to 20)')
     return parser.parse_args()
