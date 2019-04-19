@@ -30,7 +30,6 @@ class Warbot(Agent):
         Agent.__init__(self, to_me_queue, from_me_queue, initial_location,
                        initial_visible_map, WARBOT_VISION_DISTANCE, name)
         self.radio = WarbotRadio(self.name, to_this_warbot_queue, warbot_radio_broker)
-        self.action_queue = []
         self.path = []
         self.objective_location = objective_location
         self.rally_point_location = rally_point_location
@@ -42,6 +41,8 @@ class Warbot(Agent):
         self.team_b = []
         self.team_state = CONDUCT_ELECTION
         self.movement_target = None
+        self.ready_for_movement = set()
+        self.moving = False
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -202,8 +203,8 @@ class Warbot(Agent):
             return self.visible_map.warbot_locations[self.team_b_leader].plus_vector(offset)
 
     def calculate_rally_point_squad_column_wedge_position(self):
-        logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
-                      .format(self.visible_map.warbot_locations))
+        # logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
+        #               .format(self.visible_map.warbot_locations))
         squad_leader_position = self.rally_point_location.plus_vector(SCW_SQUAD_LEADER_OFFSET)
         if self.i_am_squad_leader():
             return squad_leader_position
@@ -244,19 +245,60 @@ class Warbot(Agent):
             logging.debug("{}: Found A* path from {} to {} as {}"
                           .format(self.name, self.location, self.movement_target, self.path))
         elif self.location != self.movement_target:
-            logging.debug("{} en route to squad column wedge position: {}".format(self.name, self.movement_target))
+            logging.debug("{}: En route from current location {} to squad column wedge location: {}"
+                          .format(self.name, self.location, self.movement_target))
+            if not self.moving:
+                # if we are almost to movement_target, and have submitted our move, path could be empty
+                if len(self.path) > 1:
+                    if self.visible_map.can_enter(self.path[0]):
+                        logging.debug("{}: Next location {} is clear. Moving from {} to {}"
+                                      .format(self.name, self.path[0], self.location, self.path[0]))
+                        sleep(0.3)
+                    else:
+                        logging.debug("{}: Next location {} is blocked.  Replanning route from {} to {}"
+                                      .format(self.name, self.path[0], self.location, self.movement_target))
+                        self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                        logging.debug("{}: Found en route A* path from {} to {} as {}"
+                                      .format(self.name, self.location, self.movement_target, self.path))
+                else:  # if the path is empty, just wait
+                    sleep(0.3)
+            else:
+                sleep(0.3)
         elif self.location == self.movement_target:
-            logging.debug("{} in squad column wedge position.  Notifying squad leader".format(self.name))
-            self.radio.send(ready_for_movement_message(self.name))
+            if self.i_am_squad_leader():
+                logging.debug("{} in squad column wedge position. Waiting for each warbot to notify ready."
+                              .format(self.name))
+                warbot_message = self.radio.receive_message()
+                while warbot_message is not None:
+                    if warbot_message[MESSAGE_TYPE] == READY_FOR_MOVEMENT:
+                        logging.debug("{}: Received READY_FOR_MOVEMENT message from {}. "
+                                      "Total ready messages received: {}"
+                                      .format(self.name, warbot_message[FROM], len(self.ready_for_movement)))
+                        self.ready_for_movement.add(warbot_message[FROM])
+                        if len(self.ready_for_movement) == len(self.warbot_names):
+                            self.radio.send(start_movement_message())
+                            self.team_state = MOVEMENT_TO_OBJECTIVE
+                    warbot_message = self.radio.receive_message()
+            else: # I am not the squad leader
+                if len(self.ready_for_movement) == 0:  # only send one notification to squad_leader
+                    logging.debug("{} in squad column wedge position.  Notifying squad leader".format(self.name))
+                    self.radio.send(ready_for_movement_message(self.name))
+                    self.ready_for_movement.add(self.name)
+                else:
+                    logging.debug("{} in squad column wedge position. Squad leader previously notified."
+                                  .format(self.name))
+                    warbot_message = self.radio.receive_message()
+                    if warbot_message is not None:
+                        if warbot_message[MESSAGE_TYPE] == START_MOVEMENT:
+                            self.team_state = MOVEMENT_TO_OBJECTIVE
 
     def movement_to_objective(self):
-        pass
-    #     logging.debug("{}: Begin movement to objective . . .".format(self.name))
-    #     opfor_seen = False
-    #     while not opfor_seen:
-    #         if self.i_am_squad_leader():
-    #
-    #         else:
+        logging.debug("{}: Begin movement to objective . . .".format(self.name))
+        # opfor_seen = False
+        # while not opfor_seen:
+        #     if self.i_am_squad_leader():
+        #
+        #     else:
 
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
@@ -267,6 +309,9 @@ class Warbot(Agent):
             self.form_squad_column_wedge()
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             self.movement_to_objective()
+        else:
+            logging.error("do_warbot_tasks: {}: Should not get here!  Bad team state: {}"
+                          .format(self.name, self.team_state))
 
     def determine_turn_action(self):
         if self.team_state == CONDUCT_ELECTION:
@@ -275,11 +320,15 @@ class Warbot(Agent):
             return take_turn_do_nothing_message(self.name)
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
             if len(self.path) > 0:
+                self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
             else:
                 return take_turn_do_nothing_message(self.name)
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             return take_turn_do_nothing_message(self.name)
+        else:
+            logging.error("determine_turn_action: {}: Should not get here! Bad team state: {} "
+                          .format(self.name, self.team_state))
 
     def do_sim_tasks(self):
         sim_message = self.receive_sim_message()
@@ -291,6 +340,8 @@ class Warbot(Agent):
             elif sim_message[MESSAGE_TYPE] == YOUR_TURN:
                 self.update_location_and_visible_map(sim_message[VISIBLE_MAP])
                 self.visible_map.scan()
+                if self.moving:
+                    self.moving = False
                 turn_action = self.determine_turn_action()
                 # logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
                 logging.debug("{} taking action: {}".format(self.name, turn_action))

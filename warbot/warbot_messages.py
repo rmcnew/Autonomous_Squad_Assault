@@ -81,3 +81,10 @@ def ready_for_movement_message(name):
                FROM: name,
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+def start_movement_message():
+    """Message sent by leader to start movement to objecive"""
+    message = {MESSAGE_TYPE: START_MOVEMENT,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)

@@ -28,15 +28,15 @@ class Opfor(Agent):
         self.path = []
 
     def run(self):
-        log_file = "{}.log".format(self.name)
-        logging.basicConfig(format='%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d : %(message)s',
-                            filename=log_file,
-                            level=logging.DEBUG)
         run_simulation = True
         while run_simulation:
             # get message from to_me_queue
             message = self.get_sim_message()
-            if message[MESSAGE_TYPE] == SHUTDOWN:
-                run_simulation = False
-            logging.debug("{}: Received sim message".format(self.name))
-            self.put_sim_message(take_turn_do_nothing_message(self.name))
+            if message is not None:
+                if message[MESSAGE_TYPE] == SHUTDOWN:
+                    run_simulation = False
+                logging.debug("{}: Received sim message with type: {}".format(self.name, message[MESSAGE_TYPE]))
+                if message[MESSAGE_TYPE] == YOUR_TURN:
+                    do_nothing_response = take_turn_do_nothing_message(self.name)
+                    self.put_sim_message(do_nothing_response)
+                    logging.debug("{}: Sent do nothing message: {}".format(self.name, do_nothing_response))

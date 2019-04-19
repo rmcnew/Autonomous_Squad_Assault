@@ -174,24 +174,24 @@ class MissionMap(AbstractMap):
                 MIN_Y: minus.y}
 
     def move_agent(self, agent_name, new_location):
-        logging.debug("Moving {} to new location: {}".format(agent_name, new_location))
+        logging.debug("Attempting to move {} to new location: {}".format(agent_name, new_location))
         if agent_name.startswith(WARBOT_PREFIX):
             agent_location = self.warbot_locations[agent_name]
             # logging.debug("{} current location is {}".format(agent_name, agent_location))
-            if not self.is_occupied(new_location):
-                self.warbot_locations[agent_name] = new_location
-                # get the current location and remove the warbot
-                # logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))
-                drawables_at_agent_location = self.grid[agent_location]
-                drawables_at_agent_location.remove(Drawable[agent_name])
-                self.grid[agent_location] = drawables_at_agent_location
-                # logging.debug("{} now contains: {}".format(agent_location, self.grid[agent_location]))
-                # get the new location and add the warbot
-                # logging.debug("{} currently contains: {}".format(new_location, self.grid[new_location]))
-                drawables_at_new_location = self.grid[new_location]
-                drawables_at_new_location.insert(0, Drawable[agent_name])
-                self.grid[new_location] = drawables_at_new_location
-                # logging.debug("{} now contains: {}".format(new_location, self.grid[new_location]))
+            # if not self.is_occupied(new_location):
+            self.warbot_locations[agent_name] = new_location
+            # get the current location and remove the warbot
+            # logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))
+            drawables_at_agent_location = self.grid[agent_location]
+            drawables_at_agent_location.remove(Drawable[agent_name])
+            self.grid[agent_location] = drawables_at_agent_location
+            # logging.debug("{} now contains: {}".format(agent_location, self.grid[agent_location]))
+            # get the new location and add the warbot
+            # logging.debug("{} currently contains: {}".format(new_location, self.grid[new_location]))
+            drawables_at_new_location = self.grid[new_location]
+            drawables_at_new_location.insert(0, Drawable[agent_name])
+            self.grid[new_location] = drawables_at_new_location
+            # logging.debug("{} now contains: {}".format(new_location, self.grid[new_location]))
 
         elif agent_name.startswith(OPFOR_PREFIX):
             agent_location = self.opfor_locations[agent_name]

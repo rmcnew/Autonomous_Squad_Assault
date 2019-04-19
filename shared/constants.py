@@ -46,6 +46,7 @@ SHUTDOWN = "shutdown"
 SQUAD_COLUMN_WEDGE_OFFSET = 5
 SQUAD_COLUMN_WEDGE_SPACING = 2
 SQUAD_LEADER = "squad_leader"
+START_MOVEMENT = "start_movement"
 TAKE_TURN = "take_turn"
 TEAM_A = "team_a"
 TEAM_A_LEADER = "team_a_leader"

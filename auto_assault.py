@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
+import copy
 import logging
 import sys
 import time
@@ -50,6 +51,7 @@ class AutoAssault:
         self.warbots = []  # locations for warbots and opfor are updated in the child processes and mission_map,
         self.opfors = []   # but not in these objects
         self.civilians = []  # civilians are not agents (no child processes)
+        self.active_agents = set()
 
 # simulation setup methods
     def create_warbots(self, to_sim_queue):
@@ -65,6 +67,7 @@ class AutoAssault:
             warbot = Warbot(to_queue, to_sim_queue, location, visible_map,
                             name, to_this_warbot_queue, self.warbot_radio_broker,
                             self.mission_map.objective_location, self.mission_map.rally_point_location)
+            self.active_agents.add(warbot.name)
             self.warbots.append(warbot)
             process = Process(target=warbot.run)
             self.processes.append(process)
@@ -79,6 +82,7 @@ class AutoAssault:
             name = self.mission_map.get_named_drawable_at_location(location, OPFOR_PREFIX)
             logging.info("Creating OPFOR {} at location {}".format(name, location))
             opfor = Opfor(to_queue, to_sim_queue, location, visible_map, name)
+            self.active_agents.add(opfor.name)
             self.opfors.append(opfor)
             process = Process(target=opfor.run)
             self.processes.append(process)
@@ -234,6 +238,7 @@ class AutoAssault:
             # check for q or Esc keypress or window close events to quit
             self.check_for_quit()
             # give agents updated simulation state and await their actions for this turn
+            agents_left = copy.deepcopy(self.active_agents)
             messages_received = []
             for warbot in self.warbots:
                 warbot_location = self.mission_map.warbot_locations[warbot.name]
@@ -244,11 +249,14 @@ class AutoAssault:
                 visible_map = self.mission_map.get_visible_map_around_point(opfor_location, opfor.sight_radius)
                 opfor.to_me_queue.put(your_turn_message(visible_map))
             # await "take_turn" response messages
-            logging.debug("Waiting on responses . . .")
+            logging.debug("Waiting on turn responses . . .")
             while len(messages_received) < live_process_count:
                 message = json.loads(to_sim_queue.get())
+                agents_left.remove(message[FROM])
                 messages_received.append(message)
-            logging.debug("Done waiting on responses.  Updating mission_map")
+                logging.debug("Received {} turn responses out of {} expected.  Still need response from: {}"
+                              .format(len(messages_received), live_process_count, agents_left))
+            logging.debug("Done waiting on turn responses.  Updating mission_map")
             # update mission_map
             self.update_mission_map(messages_received)
             # update display

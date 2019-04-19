@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from shared.constants import *
 from simulation.abstract_map import AbstractMap
+from simulation.direction import Direction
 from simulation.drawable import Drawable
 from simulation.point import Point
 
@@ -50,6 +51,9 @@ class VisibleMap(AbstractMap):
         adjusted_point = self.unoffset_point(point)
         drawables = self.grid[adjusted_point]
         return Drawable.WATER not in drawables
+
+    def get_random_location_one_away(self, location):
+        return location.plus_direction(Direction.get_random())
 
     def on_map(self, point):
         adjusted_point = self.unoffset_point(point)
