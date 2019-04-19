@@ -18,6 +18,7 @@
 import datetime
 import socket
 import tempfile
+from math import sqrt, pow
 
 
 def get_ip_address():
@@ -51,3 +52,5 @@ def is_even(num):
     return num % 2 == 0
 
 
+def distance(point_a, point_b):
+    return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))

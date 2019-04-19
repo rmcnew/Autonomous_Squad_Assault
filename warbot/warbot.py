@@ -19,6 +19,7 @@ from time import sleep
 from agent.agent import Agent
 from agent.agent_messages import *
 from simulation import a_star
+from simulation.direction import Direction
 from warbot.warbot_messages import *
 from warbot.warbot_radio import WarbotRadio
 
@@ -71,6 +72,9 @@ class Warbot(Agent):
             return self.team_a.index(self.name)
         else:
             return self.team_b.index(self.name)
+
+    def opfor_visible(self):
+        return len(self.visible_map.opfor_locations) > 0
 
     def shutdown(self):
         """Clean up resources and shutdown"""
@@ -294,11 +298,32 @@ class Warbot(Agent):
 
     def movement_to_objective(self):
         logging.debug("{}: Begin movement to objective . . .".format(self.name))
-        # opfor_seen = False
-        # while not opfor_seen:
-        #     if self.i_am_squad_leader():
-        #
-        #     else:
+        if not self.moving:
+            if self.i_am_squad_leader():
+                # is objective on visible map
+                if self.visible_map.objective_location is not None:  # path find to objective
+                    self.movement_target = self.visible_map.objective_location
+                    logging.debug("{}: Objective is on visible map at location: {}.  "
+                                  "Starting A* path finding from {} to {}"
+                                  .format(self.name, self.visible_map.objective_location,
+                                          self.location, self.movement_target))
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                else:  # else move in general direction
+                    logging.debug("{}: Objective is NOT on visible map.  Moving in general direction".format(self.name))
+                    movement_direction = Direction.points_to_direction(self.location, self.objective_location)
+                    logging.debug("{}: Calculated movement direction is: {}".format(self.name, movement_direction))
+                    next_point = self.location.plus_direction(movement_direction)
+                    logging.debug("{}: Calculated next_point is: {}".format(self.name, next_point))
+                    self.movement_target = next_point
+                    self.path.append(next_point)
+            else:  # follow squad_leader
+                logging.debug("{}: Following squad leader in traveling squad column wedge".format(self.name))
+                self.movement_target = self.calculate_traveling_squad_column_wedge_position()
+                logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
+                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+        else:
+            sleep(0.3)
 
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
@@ -325,7 +350,11 @@ class Warbot(Agent):
             else:
                 return take_turn_do_nothing_message(self.name)
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
-            return take_turn_do_nothing_message(self.name)
+            if len(self.path) > 0:
+                self.moving = True
+                return take_turn_move_message(self.name, self.path.pop(0))
+            else:
+                return take_turn_do_nothing_message(self.name)
         else:
             logging.error("determine_turn_action: {}: Should not get here! Bad team state: {} "
                           .format(self.name, self.team_state))

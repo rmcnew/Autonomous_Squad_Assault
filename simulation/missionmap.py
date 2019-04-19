@@ -16,7 +16,6 @@
 import logging
 from random import randint
 
-from math import pow, sqrt
 from noise import pnoise3
 
 # map contains methods to create the elements that make up the simulated
@@ -165,8 +164,8 @@ class MissionMap(AbstractMap):
 
     def get_visible_map_around_point(self, point, distance):
         # logging.debug("Getting rectangle of size {} around point {}".format(distance, point))
-        minus = self.normalize_point(point.plus_vector(Direction.SOUTHWEST.to_scaled_vector(distance)))
-        plus = self.normalize_point(point.plus_vector(Direction.NORTHEAST.to_scaled_vector(distance)))
+        minus = self.normalize_point(point.plus_vector(Direction.NORTHWEST.to_scaled_vector(distance)))
+        plus = self.normalize_point(point.plus_vector(Direction.SOUTHEAST.to_scaled_vector(distance)))
         # logging.debug("minus is {}, plus is {}".format(minus, plus))
         return {YOUR_LOCATION: point.to_dict(),
                 GRID: self.grid.array[minus.x:plus.x+1, minus.y:plus.y+1].tolist(),
@@ -217,9 +216,6 @@ class MissionMap(AbstractMap):
 
     def empty(self, point):
         return len(self.grid[point]) == 0
-
-    def distance(self, point_a, point_b):
-        return sqrt(pow(point_a.x - point_b.x, 2) + pow(point_a.y - point_b.y, 2))
 
     def can_enter(self, point):
         return self.on_map(point) and not self.is_occupied(point)

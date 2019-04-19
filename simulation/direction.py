@@ -13,20 +13,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+import logging
 from enum import Enum
 from random import choice
+from shared.functions import distance
 
 
 class Direction(Enum):
-    NORTH = (0, 1)
-    NORTHEAST = (1, 1)
+    SOUTH = (0, 1)
+    SOUTHEAST = (1, 1)
     EAST = (1, 0)
-    SOUTHEAST = (1, -1)
-    SOUTH = (0, -1)
-    SOUTHWEST = (-1, -1)
+    NORTHEAST = (1, -1)
+    NORTH = (0, -1)
+    NORTHWEST = (-1, -1)
     WEST = (-1, 0)
-    NORTHWEST = (-1, 1)
+    SOUTHWEST = (-1, 1)
 
     def to_unit_vector(self):
         return self.value
@@ -37,3 +38,15 @@ class Direction(Enum):
     @classmethod
     def get_random(cls):
         return cls[choice(list(cls.__members__))]
+
+    @classmethod
+    def points_to_direction(cls, from_point, to_point):
+        logging.debug("points_to_direction: from_point: {}, to_point: {}".format(from_point, to_point))
+        x_difference = to_point.x - from_point.x
+        y_difference = to_point.y - from_point.y
+        magnitude = distance(from_point, to_point)
+        logging.debug("x_difference: {}, y_difference: {}, magnitude: {}".format(x_difference, y_difference, magnitude))
+        x_scaled = int(round(x_difference / magnitude))
+        y_scaled = int(round(y_difference / magnitude))
+        logging.debug("x_scaled: {}, y_scaled: {}".format(x_scaled, y_scaled))
+        return Direction((x_scaled, y_scaled))
