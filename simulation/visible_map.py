@@ -13,7 +13,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+from math import inf
+
 from shared.constants import *
+from shared.functions import distance
 from simulation.abstract_map import AbstractMap
 from simulation.direction import Direction
 from simulation.drawable import Drawable
@@ -64,6 +67,17 @@ class VisibleMap(AbstractMap):
 
     def can_enter_route_plan(self, point):
         return self.on_map(point) and self.is_navigable(point)
+
+    def find_closest_top_point(self, objective):
+        closest_point = None
+        closest_distance = inf  # infinity
+        for x in range(self.grid.width):
+            current_point = self.offset_point(Point(x, 0))
+            current_distance = distance(objective, current_point)
+            if current_distance < closest_distance:
+                closest_point = current_point
+                closest_distance = current_distance
+        return closest_point
 
     def scan(self):
         for x in range(self.grid.width):

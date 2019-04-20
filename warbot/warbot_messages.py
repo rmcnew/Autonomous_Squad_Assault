@@ -84,7 +84,15 @@ def ready_for_movement_message(name):
 
 
 def start_movement_message():
-    """Message sent by leader to start movement to objecive"""
+    """Message sent by leader to start movement to objective"""
     message = {MESSAGE_TYPE: START_MOVEMENT,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def squad_leader_waypoint_message(waypoint):
+    """Message sent by squad leader giving a waypoint for movement toward the objective"""
+    message = {MESSAGE_TYPE: SQUAD_LEADER_WAYPOINT,
+               WAYPOINT: waypoint.to_dict(),
                TIMESTAMP: timestamp()}
     return json.dumps(message)

@@ -19,7 +19,7 @@ from time import sleep
 from agent.agent import Agent
 from agent.agent_messages import *
 from simulation import a_star
-from simulation.direction import Direction
+from simulation.point import Point
 from warbot.warbot_messages import *
 from warbot.warbot_radio import WarbotRadio
 
@@ -174,13 +174,11 @@ class Warbot(Agent):
                     logging.debug("{}: No team assignment message received.  Sleeping a bit . . .".format(self.name))
                     sleep(TEAM_ASSIGNMENT_SLEEP_WAIT)
 
-    def calculate_traveling_squad_column_wedge_position(self):
-        logging.debug("calculate_traveling_squad_column_wedge_position: visible_map.warbot_locations is {}"
-                      .format(self.visible_map.warbot_locations))
-        if self.i_am_squad_leader():
-            return self.location
-        elif self.i_am_team_b_leader():
-            return self.visible_map.warbot_locations[self.squad_leader].plus_vector(SCW_TEAM_B_LEADER_OFFSET)
+    def calculate_traveling_squad_column_wedge_position(self, squad_leader_waypoint):
+        # logging.debug("calculate_traveling_squad_column_wedge_position: visible_map.warbot_locations is {}"
+        #               .format(self.visible_map.warbot_locations))
+        if self.i_am_team_b_leader():
+            return squad_leader_waypoint.plus_vector(SCW_TEAM_B_LEADER_OFFSET)
         elif self.i_am_on_team_a():  # team_a starts on left
             team_index = self.get_team_index()
             offset = None
@@ -192,7 +190,7 @@ class Warbot(Agent):
                 offset = SCW_A3_OFFSET
             elif team_index == 4:
                 offset = SCW_A4_OFFSET
-            return self.visible_map.warbot_locations[self.squad_leader].plus_vector(offset)
+            return squad_leader_waypoint.plus_vector(offset)
         elif self.i_am_on_team_b():  # team_b starts on right
             offset = None
             team_index = self.get_team_index()
@@ -204,7 +202,7 @@ class Warbot(Agent):
                 offset = SCW_B3_OFFSET
             elif team_index == 4:
                 offset = SCW_B4_OFFSET
-            return self.visible_map.warbot_locations[self.team_b_leader].plus_vector(offset)
+            return squad_leader_waypoint.plus_vector(SCW_TEAM_B_LEADER_OFFSET).plus_vector(offset)
 
     def calculate_rally_point_squad_column_wedge_position(self):
         # logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
@@ -297,7 +295,7 @@ class Warbot(Agent):
                             self.team_state = MOVEMENT_TO_OBJECTIVE
 
     def movement_to_objective(self):
-        logging.debug("{}: Begin movement to objective . . .".format(self.name))
+        # logging.debug("{}: Begin movement to objective . . .".format(self.name))
         if not self.moving:
             if self.i_am_squad_leader():
                 # is objective on visible map
@@ -310,18 +308,33 @@ class Warbot(Agent):
                     self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
                 else:  # else move in general direction
                     logging.debug("{}: Objective is NOT on visible map.  Moving in general direction".format(self.name))
-                    movement_direction = Direction.points_to_direction(self.location, self.objective_location)
-                    logging.debug("{}: Calculated movement direction is: {}".format(self.name, movement_direction))
-                    next_point = self.location.plus_direction(movement_direction)
-                    logging.debug("{}: Calculated next_point is: {}".format(self.name, next_point))
-                    self.movement_target = next_point
-                    self.path.append(next_point)
-            else:  # follow squad_leader
-                logging.debug("{}: Following squad leader in traveling squad column wedge".format(self.name))
-                self.movement_target = self.calculate_traveling_squad_column_wedge_position()
-                logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
-                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
-                logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+                    next_waypoint = self.visible_map.find_closest_top_point(self.objective_location)
+                    logging.debug("{}: Calculated next_waypoint is: {}".format(self.name, next_waypoint))
+                    self.movement_target = next_waypoint
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                    logging.debug("{}: A* path to next_waypoint is: {}".format(self.name, self.path))
+                    self.radio.send(squad_leader_waypoint_message(next_waypoint))
+            else:  # I am not the squad leader
+                # is objective on visible map
+                if self.visible_map.objective_location is not None:  # path find to objective
+                    self.movement_target = self.visible_map.objective_location
+                    logging.debug("{}: Objective is on visible map at location: {}.  "
+                                  "Starting A* path finding from {} to {}"
+                                  .format(self.name, self.visible_map.objective_location,
+                                          self.location, self.movement_target))
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                else:  # follow the squad leader's waypoints
+                    logging.debug("{}: Following squad leader in traveling squad column wedge".format(self.name))
+                    warbot_message = self.radio.receive_message()
+                    if warbot_message is not None:
+                        if warbot_message[MESSAGE_TYPE] == SQUAD_LEADER_WAYPOINT:
+                            waypoint = Point.from_dict(warbot_message[WAYPOINT])
+                            self.movement_target = self.calculate_traveling_squad_column_wedge_position(waypoint)
+                            logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
+                            self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                            logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+                    else:
+                        sleep(0.3)
         else:
             sleep(0.3)
 
