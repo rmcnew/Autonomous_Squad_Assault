@@ -17,6 +17,7 @@ from math import inf
 
 from shared.constants import *
 from shared.functions import distance
+from simulation.a_star import find_path
 from simulation.abstract_map import AbstractMap
 from simulation.direction import Direction
 from simulation.drawable import Drawable
@@ -78,6 +79,30 @@ class VisibleMap(AbstractMap):
                 closest_point = current_point
                 closest_distance = current_distance
         return closest_point
+
+    def get_line_position(self, team_leader_position, my_position):
+        return Point(my_position.x, team_leader_position.y)
+
+    def find_flanking_path(self, objective_location, my_location):
+        left_candidate = objective_location.plus_vector(Direction.WEST.to_scaled_vector(WARBOT_VISION_DISTANCE - 2))
+        right_candidate = objective_location.plus_vector(Direction.EAST.to_scaled_vector(WARBOT_VISION_DISTANCE - 2))
+        left_navigable = self.is_navigable(left_candidate)
+        right_navigable = self.is_navigable(right_candidate)
+        left_distance = inf  # infinity
+        right_distance = inf
+        left_path = None
+        right_path = None
+        if left_navigable:
+            left_path = find_path(self, my_location, left_candidate)
+            left_distance = len(left_path)
+        if right_navigable:
+            right_path = find_path(self, my_location, right_candidate)
+            right_distance = len(right_path)
+        if left_distance < right_distance:
+            return left_candidate, left_path
+        else:
+            return right_candidate, right_path
+
 
     def scan(self):
         for x in range(self.grid.width):

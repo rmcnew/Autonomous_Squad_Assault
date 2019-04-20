@@ -96,3 +96,18 @@ def squad_leader_waypoint_message(waypoint):
                WAYPOINT: waypoint.to_dict(),
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+def opfor_contact_message():
+    """Message that indicates contact with OPFOR and transition to direct attack"""
+    message = {MESSAGE_TYPE: OPFOR_CONTACT,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def flanking_position_message(flanking_position):
+    """Message send by B Team Leader that gives the flanking position"""
+    message = {MESSAGE_TYPE: FLANKING_POSITION,
+               FLANKING_POSITION: flanking_position.to_dict(),
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)

@@ -44,6 +44,8 @@ class Warbot(Agent):
         self.movement_target = None
         self.ready_for_movement = set()
         self.moving = False
+        self.fire_target = None
+        self.flanking_position = None
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -295,8 +297,9 @@ class Warbot(Agent):
                             self.team_state = MOVEMENT_TO_OBJECTIVE
 
     def movement_to_objective(self):
-        # if self.opfor_visible():
-        
+        if self.opfor_visible():
+            self.radio.send(opfor_contact_message())
+            self.team_state = OPFOR_CONTACT
         if not self.moving:
             if self.i_am_squad_leader():
                 # is objective on visible map
@@ -334,13 +337,57 @@ class Warbot(Agent):
                             logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
                             self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
                             logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+                        elif warbot_message[MESSAGE_TYPE] == OPFOR_CONTACT:
+                            self.team_state = OPFOR_CONTACT
                     else:
                         sleep(0.3)
         else:
             sleep(0.3)
 
+    def get_flanking_position_offset(self, flanking_position):
+        team_index = self.get_team_index()
+        offset = None
+        if team_index == 1:
+            offset = FLANKING_B1_OFFSET
+        elif team_index == 2:
+            offset = FLANKING_B2_OFFSET
+        elif team_index == 3:
+            offset = FLANKING_B3_OFFSET
+        elif team_index == 4:
+            offset = FLANKING_B4_OFFSET
+        return flanking_position.plus_vector(offset)
+
     def react_to_contact(self):
-        pass
+        logging.debug("{}: OPFOR contact.  Beginning direct attack.".format(self.name))
+        if self.i_am_on_team_a():  # team_a moves into a line formation and begins suppressive fire against OPFOR
+            if not self.i_am_squad_leader() and self.location != self.visible_map.get_line_position(
+                    self.visible_map.warbot_locations[self.squad_leader], self.location):
+                self.movement_target = self.visible_map.get_line_position(
+                    self.visible_map.warbot_locations[self.squad_leader], self.location)
+                logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
+                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+            else:
+                sleep(0.3)
+        else:  # team_b moves to a flanking position and then notifies squad leader
+            if self.i_am_team_b_leader() and self.flanking_position is None:
+                self.flanking_position, self.path = self.visible_map.find_flanking_path(
+                    self.objective_location, self.location)
+                self.movement_target = self.flanking_position
+                self.radio.send(flanking_position_message(self.flanking_position))
+            elif not self.i_am_team_b_leader():
+                warbot_message = self.radio.receive_message()
+                if warbot_message is not None:
+                    if warbot_message[MESSAGE_TYPE] == FLANKING_POSITION:
+                        self.flanking_position = Point.from_dict(warbot_message[FLANKING_POSITION])
+                        self.movement_target = self.get_flanking_position_offset(self.flanking_position)
+                        logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
+                        self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                        logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+            else:
+                 sleep(0.3)
+
+
 
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
@@ -372,6 +419,14 @@ class Warbot(Agent):
             if len(self.path) > 0:
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
+            else:
+                return take_turn_do_nothing_message(self.name)
+        elif self.team_state == OPFOR_CONTACT:
+            if len(self.path) > 0:
+                self.moving = True
+                return take_turn_move_message(self.name, self.path.pop(0))
+            elif self.fire_target is not None:
+                return take_turn_fire_message(self.name, self.fire_target)
             else:
                 return take_turn_do_nothing_message(self.name)
         else:

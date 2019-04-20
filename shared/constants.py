@@ -28,6 +28,7 @@ ELECTION_COMPARE = "election_compare"
 ELECTION_END = "election_end"
 ELECTION_SLEEP_WAIT = 0.3
 ELECTION_WINNER_WAIT_CYCLES = 4
+FLANKING_POSITION = "flanking_position"
 FORMING_SQUAD_COLUMN_WEDGE = "forming_squad_column_wedge"
 FROM = "from"
 GRID = "grid"
@@ -91,6 +92,12 @@ SCW_B1_OFFSET = (2, 2)
 SCW_B2_OFFSET = (-2, 2)
 SCW_B3_OFFSET = (4, 4)
 SCW_B4_OFFSET = (-4, 4)
+
+# flanking position offsets
+FLANKING_B1_OFFSET = (0, -4)
+FLANKING_B2_OFFSET = (0, -2)
+FLANKING_B3_OFFSET = (0, 2)
+FLANKING_B4_OFFSET = (0, 4)
 
 # warbot behaviors
 
