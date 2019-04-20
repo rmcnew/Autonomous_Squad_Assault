@@ -220,7 +220,8 @@ class MissionMap(AbstractMap):
     def move_bullet(self, bullet):
         # remove from current location
         drawables_at_current_location = self.grid[bullet.location]
-        drawables_at_current_location.remove(Drawable.BULLET)
+        if Drawable.BULLET in drawables_at_current_location:
+            drawables_at_current_location.remove(Drawable.BULLET)
         self.grid[bullet.location] = drawables_at_current_location
         # advance bullet to next location
         bullet.next_location()

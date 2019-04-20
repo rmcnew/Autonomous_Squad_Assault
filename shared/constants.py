@@ -52,6 +52,7 @@ SQUAD_COLUMN_WEDGE_SPACING = 2
 SQUAD_LEADER = "squad_leader"
 SQUAD_LEADER_WAYPOINT = "squad_leader_waypoint"
 START_MOVEMENT = "start_movement"
+SUPPRESSIVE_FIRE_POSITION = "suppressive_fire_position"
 TAKE_TURN = "take_turn"
 TEAM_A = "team_a"
 TEAM_A_LEADER = "team_a_leader"
@@ -96,10 +97,16 @@ SCW_B2_OFFSET = (-2, 2)
 SCW_B3_OFFSET = (4, 4)
 SCW_B4_OFFSET = (-4, 4)
 
+# suppressive fire position offsets
+SUPPRESSIVE_A1_OFFSET = (-2, 0)
+SUPPRESSIVE_A2_OFFSET = (2, 0)
+SUPPRESSIVE_A3_OFFSET = (-4, 0)
+SUPPRESSIVE_A4_OFFSET = (4, 0)
+
 # flanking position offsets
-FLANKING_B1_OFFSET = (0, -4)
-FLANKING_B2_OFFSET = (0, -2)
-FLANKING_B3_OFFSET = (0, 2)
+FLANKING_B1_OFFSET = (0, -2)
+FLANKING_B2_OFFSET = (0, 2)
+FLANKING_B3_OFFSET = (0, -4)
 FLANKING_B4_OFFSET = (0, 4)
 
 # warbot behaviors

@@ -105,8 +105,16 @@ def opfor_contact_message():
     return json.dumps(message)
 
 
+def suppressive_fire_position_message(suppressive_fire_position):
+    """Message sent by A Team Leader that gives the suppressive fire position"""
+    message = {MESSAGE_TYPE: SUPPRESSIVE_FIRE_POSITION,
+               LOCATION: suppressive_fire_position.to_dict(),
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
 def flanking_position_message(flanking_position_waypoint, flanking_position):
-    """Message send by B Team Leader that gives the flanking position waypoint and the flanking position"""
+    """Message sent by B Team Leader that gives the flanking position waypoint and the flanking position"""
     message = {MESSAGE_TYPE: FLANKING_POSITION,
                FLANKING_POSITION_WAYPOINT: flanking_position_waypoint.to_dict(),
                FLANKING_POSITION: flanking_position.to_dict(),

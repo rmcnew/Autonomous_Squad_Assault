@@ -363,6 +363,19 @@ class Warbot(Agent):
         else:
             sleep(0.3)
 
+    def get_suppressive_fire_position_offset(self, suppressive_fire_position):
+        team_index = self.get_team_index()
+        offset = None
+        if team_index == 1:
+            offset = SUPPRESSIVE_A1_OFFSET
+        elif team_index == 2:
+            offset = SUPPRESSIVE_A2_OFFSET
+        elif team_index == 3:
+            offset = SUPPRESSIVE_A3_OFFSET
+        elif team_index == 4:
+            offset = SUPPRESSIVE_A4_OFFSET
+        return suppressive_fire_position.plus_vector(offset)
+
     def get_flanking_position_offset(self, flanking_position):
         team_index = self.get_team_index()
         offset = None
@@ -377,11 +390,14 @@ class Warbot(Agent):
         return flanking_position.plus_vector(offset)
 
     def react_to_contact_team_a(self):
-        if self.i_am_squad_leader() and self.flanking_position is None:  # squad leader halts
-            logging.debug("{}: Squad leader halt".format(self.name))
-            self.flanking_position = self.location
-            self.movement_target = self.location
-            self.path = []
+        if self.i_am_squad_leader() and self.flanking_position is None:  # squad leader halts and aligns
+            logging.debug("{}: Squad leader aligning with objective".format(self.name))
+            self.flanking_position = Point(self.objective_location.x, self.location.y)
+            self.movement_target = self.flanking_position
+            logging.debug("{}: Notifying Team A of suppressive fire position: {}"
+                          .format(self.name, self.flanking_position))
+            self.radio.send(suppressive_fire_position_message(self.flanking_position))
+            self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
         elif self.i_am_squad_leader() and self.flanking_position == self.location:
             # receive / accumulate messages from Team B until they are all ready to flank
             warbot_message = self.radio.receive_message()
@@ -397,14 +413,21 @@ class Warbot(Agent):
             logging.debug("{}: Directing suppressive fire".format(self.name))
             self.fire_direction = Direction.NORTH
             sleep(0.5)
+        elif self.i_am_squad_leader() and self.flanking_position is not None:  # get aligned with objective
+            logging.debug("{}: Getting aligned with objective")
+            sleep(0.5)
         elif not self.i_am_squad_leader() and self.flanking_position is None:
-            logging.debug("{}: Moving to Team A line for suppressive fire".format(self.name))
-            self.flanking_position = self.visible_map.get_line_position(
-                self.visible_map.warbot_locations[self.squad_leader], self.location)
-            self.movement_target = self.flanking_position
-            logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
-            self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
-            logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == SUPPRESSIVE_FIRE_POSITION:
+                    self.flanking_position = self.get_suppressive_fire_position_offset(
+                        Point.from_dict(warbot_message[LOCATION]))
+                    self.movement_target = self.flanking_position
+                    logging.debug("{}: suppressive fire position is: {}".format(self.name, self.movement_target))
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                    logging.debug("{}: A* path to suppressive fire position is: {}".format(self.name, self.path))
+            else:
+                sleep(0.3)
         elif not self.i_am_squad_leader() and self.location == self.flanking_position:
             logging.debug("{}: Suppressive fire".format(self.name))
             self.fire_direction = Direction.NORTH
