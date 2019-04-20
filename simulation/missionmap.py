@@ -29,8 +29,13 @@ from simulation.point import Point
 
 
 class MissionMap(AbstractMap):
+    """Procedurally-generated map where the warbot mission will be conducted """
     def __init__(self, args):
         AbstractMap.__init__(self)
+        # bullet container
+        self.bullets = []
+        # previous agent locations for faster drawing
+        self.previous_warbot_locations = {}
         # initialize the default grid
         self.grid.default_grid()
         # randomly generate terrain
@@ -43,8 +48,6 @@ class MissionMap(AbstractMap):
         self.generate_warbot_locations(args.r)
         # generate civilians
         self.generate_civilian_locations(args.c)
-        # bullet container
-        self.bullets = []
 
     def generate_objective_location(self):
         self.objective_location = self.get_random_upper_location_on_dirt()
@@ -65,6 +68,7 @@ class MissionMap(AbstractMap):
             warbot_name = WARBOT_PREFIX + str(warbot_index)
             self.grid[random_point] = [Drawable[warbot_name], Drawable.DIRT]
             self.warbot_locations[warbot_name] = random_point
+            self.previous_warbot_locations[warbot_name] = None
             warbot_index = warbot_index + 1
 
     def generate_opfor_locations(self, opfor_count):
@@ -182,6 +186,7 @@ class MissionMap(AbstractMap):
             agent_location = self.warbot_locations[agent_name]
             # logging.debug("{} current location is {}".format(agent_name, agent_location))
             # if not self.is_occupied(new_location):
+            self.previous_warbot_locations[agent_name] = self.warbot_locations[agent_name]
             self.warbot_locations[agent_name] = new_location
             # get the current location and remove the warbot
             # logging.debug("{} currently contains: {}".format(agent_location, self.grid[agent_location]))

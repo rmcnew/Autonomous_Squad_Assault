@@ -18,8 +18,10 @@
 class Bullet:
     """Represents a bullet that was fired"""
     def __init__(self, initial_location, direction):
+        self.prev_location = None
         self.location = initial_location
         self.direction = direction
 
     def next_location(self):
+        self.prev_location = self.location
         self.location = self.location.plus_direction(self.direction)

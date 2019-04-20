@@ -193,6 +193,37 @@ class AutoAssault:
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
 
+    def update_warbots(self):
+        """Draw the updated game state (mission_map) to the screen"""
+        for warbot in self.mission_map.warbot_locations.keys():
+            for location in [self.mission_map.warbot_locations[warbot],
+                             self.mission_map.previous_warbot_locations[warbot]]:
+                if location is not None:
+                    (lineColor, fillColor) = self.get_color(self.mission_map, location.x, location.y)
+                    cell_x = location.x * CELL_SIZE
+                    cell_y = location.y * CELL_SIZE + TOP_BUFFER
+                    rect = pygame.Rect(cell_x, cell_y, CELL_SIZE, CELL_SIZE)
+                    pygame.draw.rect(DISPLAY_SURF, lineColor.value, rect)
+                    inner_rect = pygame.Rect(cell_x + 4, cell_y + 4, CELL_SIZE - 8, CELL_SIZE - 8)
+                    pygame.draw.rect(DISPLAY_SURF, fillColor.value, inner_rect)
+        pygame.display.update()
+        FPS_CLOCK.tick(FPS)
+
+    def update_bullets(self):
+        """Only animate bullets"""
+        for bullet in self.mission_map.bullets:
+            for location in [bullet.location, bullet.prev_location]:
+                if location is not None:
+                    (lineColor, fillColor) = self.get_color(self.mission_map, location.x, location.y)
+                    cell_x = location.x * CELL_SIZE
+                    cell_y = location.y * CELL_SIZE + TOP_BUFFER
+                    rect = pygame.Rect(cell_x, cell_y, CELL_SIZE, CELL_SIZE)
+                    pygame.draw.rect(DISPLAY_SURF, lineColor.value, rect)
+                    inner_rect = pygame.Rect(cell_x + 4, cell_y + 4, CELL_SIZE - 8, CELL_SIZE - 8)
+                    pygame.draw.rect(DISPLAY_SURF, fillColor.value, inner_rect)
+        pygame.display.update()
+        FPS_CLOCK.tick(FPS)
+
 # simulation main loop and helpers
     def terminate(self):
         """Simulation shutdown and clean-up"""
@@ -227,7 +258,7 @@ class AutoAssault:
                     bullets_live = True
         if bullets_live:
             while len(self.mission_map.bullets) > 0:
-                self.update_display()
+                self.update_bullets()
                 self.mission_map.move_bullets()
 
     def start_child_processes(self):
@@ -243,6 +274,8 @@ class AutoAssault:
         self.start_child_processes()
         mission_complete = False
         quit_wanted = False
+        # Draw the whole map the first time; afterwards only draw updates for better performance
+        self.update_display()
         live_process_count = len(self.processes)
         while not mission_complete and not quit_wanted:  # main game loop
             # check for q or Esc keypress or window close events to quit
@@ -269,8 +302,8 @@ class AutoAssault:
             logging.debug("Done waiting on turn responses.  Updating mission_map")
             # update mission_map
             self.update_mission_map(messages_received)
-            # update display
-            self.update_display()
+            # update warbot movement
+            self.update_warbots()
         # after the mission is complete or quit is indicated, clean-up and shutdown
         self.terminate()
 
@@ -279,9 +312,9 @@ def parse_arguments():
     """Parse the command line arguments"""
     # setup command line argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument('-r', default=5, type=int, choices=range(2, 11),
+    parser.add_argument('-r', default=6, type=int, choices=range(2, 11),
                         help='number of rifle warbots (2 to 10)')
-    parser.add_argument('-e', default=5, type=int, choices=range(1, 11),
+    parser.add_argument('-e', default=6, type=int, choices=range(1, 11),
                         help='number of enemies (1 to 10)')
     parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
                         help='number of civilians (0 to 20)')
