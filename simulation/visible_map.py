@@ -85,9 +85,9 @@ class VisibleMap(AbstractMap):
                 current_point = Point(x, y)
                 drawables = self.grid[current_point]
                 for drawable in drawables:
-                    if drawable.value == Drawable.OBJECTIVE:
+                    if drawable is Drawable.OBJECTIVE:
                         self.objective_location = self.offset_point(current_point)
-                    elif drawable.value == Drawable.RALLY_POINT:
+                    elif drawable is Drawable.RALLY_POINT:
                         self.rally_point_location = self.offset_point(current_point)
                     elif drawable.name.startswith(WARBOT_PREFIX):
                         self.warbot_locations[drawable.name] = self.offset_point(current_point)

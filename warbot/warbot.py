@@ -295,12 +295,13 @@ class Warbot(Agent):
                             self.team_state = MOVEMENT_TO_OBJECTIVE
 
     def movement_to_objective(self):
-        # logging.debug("{}: Begin movement to objective . . .".format(self.name))
+        # if self.opfor_visible():
+        
         if not self.moving:
             if self.i_am_squad_leader():
                 # is objective on visible map
                 if self.visible_map.objective_location is not None:  # path find to objective
-                    self.movement_target = self.visible_map.objective_location
+                    self.movement_target = self.objective_location
                     logging.debug("{}: Objective is on visible map at location: {}.  "
                                   "Starting A* path finding from {} to {}"
                                   .format(self.name, self.visible_map.objective_location,
@@ -317,7 +318,7 @@ class Warbot(Agent):
             else:  # I am not the squad leader
                 # is objective on visible map
                 if self.visible_map.objective_location is not None:  # path find to objective
-                    self.movement_target = self.visible_map.objective_location
+                    self.movement_target = self.objective_location
                     logging.debug("{}: Objective is on visible map at location: {}.  "
                                   "Starting A* path finding from {} to {}"
                                   .format(self.name, self.visible_map.objective_location,
@@ -338,6 +339,9 @@ class Warbot(Agent):
         else:
             sleep(0.3)
 
+    def react_to_contact(self):
+        pass
+
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
             self.conduct_election()
@@ -347,6 +351,8 @@ class Warbot(Agent):
             self.form_squad_column_wedge()
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             self.movement_to_objective()
+        elif self.team_state == OPFOR_CONTACT:
+            self.react_to_contact()
         else:
             logging.error("do_warbot_tasks: {}: Should not get here!  Bad team state: {}"
                           .format(self.name, self.team_state))
