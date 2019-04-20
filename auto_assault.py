@@ -28,6 +28,7 @@ from pygame.locals import *
 from agent.agent_messages import *
 from graphics.pygame_constants import *
 from opfor.opfor import Opfor
+from simulation.direction import Direction
 from simulation.drawable import Drawable
 from simulation.missionmap import MissionMap
 from simulation.point import Point
@@ -188,7 +189,6 @@ class AutoAssault:
         """Draw the updated game state (mission_map) to the screen"""
         DISPLAY_SURF.fill(BG_COLOR.value)
         self.draw_grid(self.mission_map)
-        elapsed_minutes = int((datetime.now() - self.start_time).seconds / SECONDS_PER_MINUTE)
         # draw_legend()
         pygame.display.update()
         FPS_CLOCK.tick(FPS)
@@ -211,6 +211,7 @@ class AutoAssault:
 
     def update_mission_map(self, messages_received):
         """Update game state (mission_map) from agent subprocess messages"""
+        bullets_live = False
         for message in messages_received:
             logging.debug("Simulation:  Received message: {}".format(message))
             if message[MESSAGE_TYPE] == TAKE_TURN:
@@ -219,6 +220,15 @@ class AutoAssault:
                 if action == MOVE_TO:
                     location = Point.from_dict(message[LOCATION])
                     self.mission_map.move_agent(agent, location)
+                elif action == FIRE_AT:
+                    location = Point.from_dict(message[LOCATION])
+                    direction = Direction.from_str(message[DIRECTION])
+                    self.mission_map.create_bullet(location, direction)
+                    bullets_live = True
+        if bullets_live:
+            while len(self.mission_map.bullets) > 0:
+                self.update_display()
+                self.mission_map.move_bullets()
 
     def start_child_processes(self):
         """Start child processes running for agents and warbot radio broker process"""

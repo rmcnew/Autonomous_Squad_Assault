@@ -50,12 +50,13 @@ def take_turn_move_message(name, location):
     return json.dumps(message)
 
 
-def take_turn_fire_message(name, location):
+def take_turn_fire_message(name, location, direction):
     """Message that the agent sends to take a turn by firing a weapon"""
     message = {MESSAGE_TYPE: TAKE_TURN,
                FROM: name,
                ACTION: FIRE_AT,
                LOCATION: location.to_dict(),
+               DIRECTION: direction.to_str(),
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 

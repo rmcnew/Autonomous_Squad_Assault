@@ -19,6 +19,7 @@ from time import sleep
 from agent.agent import Agent
 from agent.agent_messages import *
 from simulation import a_star
+from simulation.direction import Direction
 from simulation.point import Point
 from warbot.warbot_messages import *
 from warbot.warbot_radio import WarbotRadio
@@ -45,7 +46,7 @@ class Warbot(Agent):
         self.ready_for_movement = set()
         self.ready_to_flank = set()
         self.moving = False
-        self.fire_target = None
+        self.fire_direction = None
         self.flanking_position = None
         self.flanking_position_reached = False
         self.flanking_position_waypoint = None
@@ -394,6 +395,7 @@ class Warbot(Agent):
                         self.team_state = LIFT_AND_SHIFT_FIRE
             # direct suppressive fire for Team A
             logging.debug("{}: Directing suppressive fire".format(self.name))
+            self.fire_direction = Direction.NORTH
             sleep(0.5)
         elif not self.i_am_squad_leader() and self.flanking_position is None:
             logging.debug("{}: Moving to Team A line for suppressive fire".format(self.name))
@@ -405,6 +407,7 @@ class Warbot(Agent):
             logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
         elif not self.i_am_squad_leader() and self.location == self.flanking_position:
             logging.debug("{}: Suppressive fire".format(self.name))
+            self.fire_direction = Direction.NORTH
             sleep(0.5)
         else:
             sleep(0.3)
@@ -467,6 +470,7 @@ class Warbot(Agent):
             elif self.flanking_position_reached:
                 if len(self.ready_to_flank) == 0:
                     logging.debug("{}: Sending READY_TO_FLANK to squad leader".format(self.name))
+                    self.ready_to_flank.add(self.name)
                     self.radio.send(ready_to_flank_message(self.name))
                     sleep(0.3)
             else:  # flanking waypoint reached, go to flanking position
@@ -483,6 +487,10 @@ class Warbot(Agent):
         else:
             sleep(0.3)
 
+    def lift_and_shift_fire(self):
+        logging.debug("{}: Lifting and shifting fire".format(self.name))
+        sleep(0.5)
+
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
             self.conduct_election()
@@ -494,6 +502,8 @@ class Warbot(Agent):
             self.movement_to_objective()
         elif self.team_state == OPFOR_CONTACT:
             self.react_to_contact()
+        elif self.team_state == LIFT_AND_SHIFT_FIRE:
+            self.lift_and_shift_fire()
         else:
             logging.error("do_warbot_tasks: {}: Should not get here!  Bad team state: {}"
                           .format(self.name, self.team_state))
@@ -519,8 +529,8 @@ class Warbot(Agent):
             if len(self.path) > 0:
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
-            elif self.fire_target is not None:
-                return take_turn_fire_message(self.name, self.fire_target)
+            elif self.fire_direction is not None:
+                return take_turn_fire_message(self.name, self.location, self.fire_direction)
             else:
                 return take_turn_do_nothing_message(self.name)
         else:

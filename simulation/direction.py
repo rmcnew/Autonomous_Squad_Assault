@@ -16,6 +16,7 @@
 import logging
 from enum import Enum
 from random import choice
+
 from shared.functions import distance
 
 
@@ -34,6 +35,13 @@ class Direction(Enum):
 
     def to_scaled_vector(self, scalar):
         return self.value[0] * scalar, self.value[1] * scalar
+
+    def to_str(self):
+        return self.name
+
+    @classmethod
+    def from_str(cls, str):
+        return cls[str]
 
     @classmethod
     def get_random(cls):

@@ -22,6 +22,7 @@ from noise import pnoise3
 # map where the autonomous infantry squad operates
 from shared.constants import *
 from simulation.abstract_map import AbstractMap
+from simulation.bullet import Bullet
 from simulation.direction import Direction
 from simulation.drawable import Drawable
 from simulation.point import Point
@@ -42,6 +43,8 @@ class MissionMap(AbstractMap):
         self.generate_warbot_locations(args.r)
         # generate civilians
         self.generate_civilian_locations(args.c)
+        # bullet container
+        self.bullets = []
 
     def generate_objective_location(self):
         self.objective_location = self.get_random_upper_location_on_dirt()
@@ -201,6 +204,32 @@ class MissionMap(AbstractMap):
                 if len(drawables_at_agent_location) > 0:
                     drawables_at_agent_location.remove(Drawable[agent_name])
                 self.grid[new_location] = self.grid[new_location].append(Drawable[agent_name])
+
+    def create_bullet(self, location, direction):
+        bullet = Bullet(location, direction)
+        self.bullets.append(bullet)
+        drawables_at_next_location = self.grid[bullet.location]
+        drawables_at_next_location.insert(0, Drawable.BULLET)
+        self.grid[bullet.location] = drawables_at_next_location
+
+    def move_bullet(self, bullet):
+        # remove from current location
+        drawables_at_current_location = self.grid[bullet.location]
+        drawables_at_current_location.remove(Drawable.BULLET)
+        self.grid[bullet.location] = drawables_at_current_location
+        # advance bullet to next location
+        bullet.next_location()
+        if self.on_map(bullet.location):
+            # add to next location
+            drawables_at_next_location = self.grid[bullet.location]
+            drawables_at_next_location.insert(0, Drawable.BULLET)
+            self.grid[bullet.location] = drawables_at_next_location
+        else:
+            self.bullets.remove(bullet)
+
+    def move_bullets(self):
+        for bullet in self.bullets:
+            self.move_bullet(bullet)
 
     def is_occupied(self, point):
         for drawable in self.grid[point]:

@@ -22,6 +22,7 @@ Y = 'y'
 
 # message strings
 ACTION = "action"
+DIRECTION = "direction"
 DO_NOTHING = "do_nothing"
 ELECTION_NAME_DECLARE = "election_name_declare"  # also serves as ELECTION_BEGIN
 ELECTION_COMPARE = "election_compare"
