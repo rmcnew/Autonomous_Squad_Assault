@@ -43,9 +43,13 @@ class Warbot(Agent):
         self.team_state = CONDUCT_ELECTION
         self.movement_target = None
         self.ready_for_movement = set()
+        self.ready_to_flank = set()
         self.moving = False
         self.fire_target = None
         self.flanking_position = None
+        self.flanking_position_reached = False
+        self.flanking_position_waypoint = None
+        self.flanking_position_waypoint_reached = False
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -206,6 +210,19 @@ class Warbot(Agent):
                 offset = SCW_B4_OFFSET
             return squad_leader_waypoint.plus_vector(SCW_TEAM_B_LEADER_OFFSET).plus_vector(offset)
 
+    def calculate_traveling_team_column_wedge_position(self, team_leader_waypoint):
+        offset = None
+        team_index = self.get_team_index()
+        if team_index == 1:
+            offset = SCW_B1_OFFSET
+        elif team_index == 2:
+            offset = SCW_B2_OFFSET
+        elif team_index == 3:
+            offset = SCW_B3_OFFSET
+        elif team_index == 4:
+            offset = SCW_B4_OFFSET
+        return team_leader_waypoint.plus_vector(offset)
+
     def calculate_rally_point_squad_column_wedge_position(self):
         # logging.debug("calculate_squad_column_wedge_position: visible_map.warbot_locations is {}"
         #               .format(self.visible_map.warbot_locations))
@@ -298,6 +315,7 @@ class Warbot(Agent):
 
     def movement_to_objective(self):
         if self.opfor_visible():
+            logging.debug("{}: OPFOR sighted.  Notifying squad . . .")
             self.radio.send(opfor_contact_message())
             self.team_state = OPFOR_CONTACT
         if not self.moving:
@@ -357,37 +375,113 @@ class Warbot(Agent):
             offset = FLANKING_B4_OFFSET
         return flanking_position.plus_vector(offset)
 
+    def react_to_contact_team_a(self):
+        if self.i_am_squad_leader() and self.flanking_position is None:  # squad leader halts
+            logging.debug("{}: Squad leader halt".format(self.name))
+            self.flanking_position = self.location
+            self.movement_target = self.location
+            self.path = []
+        elif self.i_am_squad_leader() and self.flanking_position == self.location:
+            # receive / accumulate messages from Team B until they are all ready to flank
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == READY_TO_FLANK:
+                    logging.debug("{}: Received READY_TO_FLANK from {}".format(self.name, warbot_message[NAME]))
+                    self.ready_to_flank.add(warbot_message[NAME])
+                    if len(self.ready_to_flank) == len(self.team_b):
+                        logging.debug("Team B is READY_TO_FLANK.")
+                        self.radio.send(lift_and_shift_fire_message())
+                        self.team_state = LIFT_AND_SHIFT_FIRE
+            # direct suppressive fire for Team A
+            logging.debug("{}: Directing suppressive fire".format(self.name))
+            sleep(0.5)
+        elif not self.i_am_squad_leader() and self.flanking_position is None:
+            logging.debug("{}: Moving to Team A line for suppressive fire".format(self.name))
+            self.flanking_position = self.visible_map.get_line_position(
+                self.visible_map.warbot_locations[self.squad_leader], self.location)
+            self.movement_target = self.flanking_position
+            logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
+            self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+            logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
+        elif not self.i_am_squad_leader() and self.location == self.flanking_position:
+            logging.debug("{}: Suppressive fire".format(self.name))
+            sleep(0.5)
+        else:
+            sleep(0.3)
+
+    def react_to_contact_team_b(self):
+        # determine flanking position base and flanking position waypoint; send to team B
+        if self.i_am_team_b_leader() and self.flanking_position is None:
+            logging.debug("{}: Establishing Team B flanking position and waypoint".format(self.name))
+            self.flanking_position, self.flanking_position_waypoint = self.visible_map.find_flanking_waypoint(
+                self.objective_location, self.location)
+            logging.debug("{}: Flanking position is: {}.  "
+                          "Flanking position waypoint is {}.  Notifying Team B . . ."
+                          .format(self.name, self.flanking_position, self.flanking_position_waypoint))
+            # send team the waypoint
+            self.radio.send(flanking_position_message(self.flanking_position_waypoint, self.flanking_position))
+
+        # get flanking position and flanking position waypoint from Team B Leader
+        elif not self.i_am_team_b_leader() and self.flanking_position is None:
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == FLANKING_POSITION:
+                    logging.debug("{}: received flanking position message from Team B Leader"
+                                  .format(self.name))
+                    self.flanking_position_waypoint = self.calculate_traveling_team_column_wedge_position(
+                        Point.from_dict(warbot_message[FLANKING_POSITION_WAYPOINT]))
+                    self.flanking_position = self.get_flanking_position_offset(Point.from_dict(
+                        warbot_message[FLANKING_POSITION]))
+
+        # move to flanking position waypoint and then flanking position
+        elif self.flanking_position is not None:
+            if not self.flanking_position_waypoint_reached:
+                if self.flanking_position_waypoint == self.location:
+                    logging.debug("{}: Reached flanking position waypoint: {}"
+                                  .format(self.name, self.flanking_position_waypoint))
+                    self.flanking_position_waypoint_reached = True
+                else:
+                    if self.visible_map.is_left_of_me(self.flanking_position_waypoint, self.location):
+                        self.movement_target = self.visible_map.find_closest_left_point(
+                            self.flanking_position_waypoint)
+                    else:  # flanking_position_waypoint is to the right
+                        self.movement_target = self.visible_map.find_closest_right_point(
+                            self.flanking_position_waypoint)
+                    logging.debug("{}: Finding path to flanking position waypoint: {}"
+                                  .format(self.name, self.movement_target))
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                    logging.debug("{}: A* path to waypoint is: {}".format(self.name, self.path))
+
+            elif self.flanking_position_waypoint_reached and not self.flanking_position_reached:
+                if self.flanking_position == self.location:
+                    logging.debug("{}: Reached flanking position: {}"
+                                  .format(self.name, self.flanking_position))
+                    self.flanking_position_reached = True
+                else:
+                    self.movement_target = self.visible_map.find_closest_top_point(self.flanking_position)
+                    logging.debug("{}: Finding path to flanking position: {}"
+                                  .format(self.name, self.movement_target))
+                    self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                    logging.debug("{}: A* path to waypoint is: {}".format(self.name, self.path))
+
+            elif self.flanking_position_reached:
+                if len(self.ready_to_flank) == 0:
+                    logging.debug("{}: Sending READY_TO_FLANK to squad leader".format(self.name))
+                    self.radio.send(ready_to_flank_message(self.name))
+                    sleep(0.3)
+            else:  # flanking waypoint reached, go to flanking position
+                logging.error("{}: Should not reach here!".format(self.name))
+                sleep(0.5)
+
     def react_to_contact(self):
-        logging.debug("{}: OPFOR contact.  Beginning direct attack.".format(self.name))
-        if self.i_am_on_team_a():  # team_a moves into a line formation and begins suppressive fire against OPFOR
-            if not self.i_am_squad_leader() and self.location != self.visible_map.get_line_position(
-                    self.visible_map.warbot_locations[self.squad_leader], self.location):
-                self.movement_target = self.visible_map.get_line_position(
-                    self.visible_map.warbot_locations[self.squad_leader], self.location)
-                logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
-                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
-                logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
-            else:
-                sleep(0.3)
-        else:  # team_b moves to a flanking position and then notifies squad leader
-            if self.i_am_team_b_leader() and self.flanking_position is None:
-                self.flanking_position, self.path = self.visible_map.find_flanking_path(
-                    self.objective_location, self.location)
-                self.movement_target = self.flanking_position
-                self.radio.send(flanking_position_message(self.flanking_position))
-            elif not self.i_am_team_b_leader():
-                warbot_message = self.radio.receive_message()
-                if warbot_message is not None:
-                    if warbot_message[MESSAGE_TYPE] == FLANKING_POSITION:
-                        self.flanking_position = Point.from_dict(warbot_message[FLANKING_POSITION])
-                        self.movement_target = self.get_flanking_position_offset(self.flanking_position)
-                        logging.debug("{}: Movement target is: {}".format(self.name, self.movement_target))
-                        self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
-                        logging.debug("{}: A* path to movement target is: {}".format(self.name, self.path))
-            else:
-                 sleep(0.3)
+        if not self.moving:
+            if self.i_am_on_team_a():  # team_a moves into a line formation and begins suppressive fire against OPFOR
+                self.react_to_contact_team_a()
 
-
+            else:  # team_b moves to a flanking position and then notifies squad leader
+                self.react_to_contact_team_b()
+        else:
+            sleep(0.3)
 
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:

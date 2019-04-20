@@ -105,9 +105,26 @@ def opfor_contact_message():
     return json.dumps(message)
 
 
-def flanking_position_message(flanking_position):
-    """Message send by B Team Leader that gives the flanking position"""
+def flanking_position_message(flanking_position_waypoint, flanking_position):
+    """Message send by B Team Leader that gives the flanking position waypoint and the flanking position"""
     message = {MESSAGE_TYPE: FLANKING_POSITION,
+               FLANKING_POSITION_WAYPOINT: flanking_position_waypoint.to_dict(),
                FLANKING_POSITION: flanking_position.to_dict(),
                TIMESTAMP: timestamp()}
     return json.dumps(message)
+
+
+def ready_to_flank_message(name):
+    """Message sent by Team B to Squad Leader indicating ready to flank OPFOR"""
+    message = {MESSAGE_TYPE: READY_TO_FLANK,
+               NAME: name,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def lift_and_shift_fire_message():
+    """Message sent by Squad Leader to direct lift and shift fire for Team A and assault for Team B"""
+    message = {MESSAGE_TYPE: LIFT_AND_SHIFT_FIRE,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
