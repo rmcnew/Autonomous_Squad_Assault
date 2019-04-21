@@ -60,6 +60,12 @@ def take_turn_fire_message(name, location, direction):
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
+def mission_complete_message():
+    """Message that indictes the mission is complete"""
+    message = {MESSAGE_TYPE: MISSION_COMPLETE,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
 
 def shutdown_message():
     """Message that directs the receiver to cleanly shutdown"""

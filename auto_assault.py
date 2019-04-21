@@ -19,7 +19,6 @@ import copy
 import logging
 import sys
 import time
-from datetime import datetime
 from multiprocessing import Process, Queue
 
 import pygame
@@ -39,7 +38,7 @@ from warbot.warbot_radio_broker import WarbotRadioBroker
 class AutoAssault:
     """Autonomous Assault Simulation"""
     def __init__(self, args):
-        self.start_time = None
+        self.mission_complete = False
         # generate map
         self.mission_map = MissionMap(args)
         # create IPC queues and warbot radio message broker
@@ -164,11 +163,11 @@ class AutoAssault:
             DISPLAY_SURF.blit(surf, rect)
             x = x + LEGEND_SCALE * len(drawable.name) + 7
 
-    def show_game_over_screen(self, winner):
+    def show_game_over_screen(self):
         """Draw simulation ended message"""
         game_over_font = pygame.font.Font(SANS_FONT, 150)
-        game_surf = game_over_font.render(winner, True, Colors.WHITE.value)
-        over_surf = game_over_font.render('Wins!', True, Colors.WHITE.value)
+        game_surf = game_over_font.render("Mission", True, Colors.WHITE.value)
+        over_surf = game_over_font.render('Complete', True, Colors.WHITE.value)
         game_rect = game_surf.get_rect()
         over_rect = over_surf.get_rect()
         game_rect.midtop = (WINDOW_WIDTH / 2, 10)
@@ -256,6 +255,9 @@ class AutoAssault:
                     direction = Direction.from_str(message[DIRECTION])
                     self.mission_map.create_bullet(location, direction)
                     bullets_live = True
+            elif message[MESSAGE_TYPE] == MISSION_COMPLETE:
+                self.mission_complete = True
+                return
         if bullets_live:
             while len(self.mission_map.bullets) > 0:
                 self.update_bullets()
@@ -267,17 +269,15 @@ class AutoAssault:
         # start warbot and opfor processes running
         for process in self.processes:
             process.start()
-        self.start_time = datetime.now()
 
     def run_simulation(self, to_sim_queue):
         """Main simulation loop"""
         self.start_child_processes()
-        mission_complete = False
         quit_wanted = False
         # Draw the whole map the first time; afterwards only draw updates for better performance
         self.update_display()
         live_process_count = len(self.processes)
-        while not mission_complete and not quit_wanted:  # main game loop
+        while not self.mission_complete and not quit_wanted:  # main game loop
             # check for q or Esc keypress or window close events to quit
             self.check_for_quit()
             # give agents updated simulation state and await their actions for this turn
@@ -295,6 +295,8 @@ class AutoAssault:
             logging.debug("Waiting on turn responses . . .")
             while len(messages_received) < live_process_count:
                 message = json.loads(to_sim_queue.get())
+                if message[MESSAGE_TYPE] == MISSION_COMPLETE:
+                    break
                 agents_left.remove(message[FROM])
                 messages_received.append(message)
                 logging.debug("Received {} turn responses out of {} expected.  Still need response from: {}"
@@ -302,8 +304,11 @@ class AutoAssault:
             logging.debug("Done waiting on turn responses.  Updating mission_map")
             # update mission_map
             self.update_mission_map(messages_received)
-            # update warbot movement
-            self.update_warbots()
+            if self.mission_complete:
+                self.show_game_over_screen()
+            else:
+                # update warbot movement
+                self.update_warbots()
         # after the mission is complete or quit is indicated, clean-up and shutdown
         self.terminate()
 

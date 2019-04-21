@@ -137,7 +137,7 @@ class MissionMap(AbstractMap):
 
     def get_random_upper_location(self):
         return Point(randint(int(0.25 * self.grid.width),   int(0.75 * self.grid.width)),   # X
-                     randint(int(0.25 * self.grid.height),  int(0.35 * self.grid.height)))  # Y
+                     randint(int(0.20 * self.grid.height),  int(0.30 * self.grid.height)))  # Y
 
     def get_random_lower_location_on_dirt(self):
         while True:

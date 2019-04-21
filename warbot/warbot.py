@@ -46,6 +46,8 @@ class Warbot(Agent):
         self.movement_target = None
         self.ready_for_movement = set()
         self.ready_to_flank = set()
+        self.limit_of_advance_attained = set()
+        self.security_established = set()
         self.moving = False
         self.firing = False
         self.fire_direction = None
@@ -57,6 +59,8 @@ class Warbot(Agent):
         self.limit_of_advance_reached = False
         self.objective_clearance_direction = None
         self.last_objective_clearance_action = MOVE
+        self.secure_objective_location = None
+        self.secure_objective_location_route_planned = False
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -329,8 +333,8 @@ class Warbot(Agent):
             if self.i_am_squad_leader():
                 # is objective on visible map
                 if self.visible_map.objective_location is not None:  # path find to objective
-                    self.movement_target = self.objective_location.\
-                        plus_vector(Direction.SOUTH.to_scaled_vector(WARBOT_VISION_DISTANCE - 4))
+                    self.movement_target = Point(self.objective_location.x,
+                                           self.objective_location.y + WARBOT_VISION_DISTANCE - 2)
                     logging.debug("{}: Objective is on visible map at location: {}.  "
                                   "Starting A* path finding from {} to {}"
                                   .format(self.name, self.visible_map.objective_location,
@@ -338,7 +342,8 @@ class Warbot(Agent):
                     self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
                 else:  # else move in general direction
                     logging.debug("{}: Objective is NOT on visible map.  Moving in general direction".format(self.name))
-                    next_waypoint = self.visible_map.find_closest_top_point(self.objective_location)
+                    next_waypoint = self.visible_map.find_closest_top_point(Point(self.objective_location.x,
+                                           self.objective_location.y + WARBOT_VISION_DISTANCE - 2))
                     logging.debug("{}: Calculated next_waypoint is: {}".format(self.name, next_waypoint))
                     self.movement_target = next_waypoint
                     self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
@@ -530,7 +535,26 @@ class Warbot(Agent):
 
     def lift_and_shift_fire_team_a(self):
         self.fire_direction = None
-        sleep(0.5)
+        if self.i_am_squad_leader():
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == LIMIT_OF_ADVANCE:
+                    self.limit_of_advance_attained.add(warbot_message[NAME])
+                    # after all Team B reaches limit of advance, secure the objective
+                    if len(self.limit_of_advance_attained) == len(self.team_b):
+                        self.radio.send(secure_objective_message())
+                        self.fire_direction = None
+                        self.team_state = SECURE_OBJECTIVE
+            else:
+                sleep(0.5)
+        else:
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == SECURE_OBJECTIVE:
+                    self.fire_direction = None
+                    self.team_state = SECURE_OBJECTIVE
+            else:
+                sleep(0.5)
 
     def lift_and_shift_fire_team_b(self):
         if self.limit_of_advance is None:
@@ -566,12 +590,13 @@ class Warbot(Agent):
             warbot_message = self.radio.receive_message()
             if warbot_message is not None:
                 if warbot_message[MESSAGE_TYPE] == SECURE_OBJECTIVE:
+                    self.fire_direction = None
                     self.team_state = SECURE_OBJECTIVE
             else:
                 sleep(0.3)
 
     def lift_and_shift_fire(self):
-        logging.debug("{}: Lifting and shifting fire".format(self.name))
+        # logging.debug("{}: Lifting and shifting fire".format(self.name))
         if not self.moving:
             if self.i_am_on_team_a():  # team_a stops firing as team_b sweeps across the objective
                 self.lift_and_shift_fire_team_a()
@@ -581,19 +606,107 @@ class Warbot(Agent):
         else:
             sleep(0.3)
 
+    def secure_objective(self):
+        if not self.moving:
+            # calculate the security perimeter position
+            if self.secure_objective_location is None:
+                warbot_id = self.extract_id_from_warbot_name(self.name)
+                offset = None
+                if warbot_id == 1:
+                    offset = SECURITY_PERIMETER_1_OFFSET
+                elif warbot_id == 2:
+                    offset = SECURITY_PERIMETER_2_OFFSET
+                elif warbot_id == 3:
+                    offset = SECURITY_PERIMETER_3_OFFSET
+                elif warbot_id == 4:
+                    offset = SECURITY_PERIMETER_4_OFFSET
+                elif warbot_id == 5:
+                    offset = SECURITY_PERIMETER_5_OFFSET
+                elif warbot_id == 6:
+                    offset = SECURITY_PERIMETER_6_OFFSET
+                elif warbot_id == 7:
+                    offset = SECURITY_PERIMETER_7_OFFSET
+                elif warbot_id == 8:
+                    offset = SECURITY_PERIMETER_8_OFFSET
+                elif warbot_id == 9:
+                    offset = SECURITY_PERIMETER_9_OFFSET
+                elif warbot_id == 10:
+                    offset = SECURITY_PERIMETER_10_OFFSET
+                else:
+                    logging.error("Should not get here!")
+                self.secure_objective_location = self.objective_location.plus_vector(offset)
+                logging.debug("{}: secure_objective_location is: {}".format(self.name, self.secure_objective_location))
+                sleep(0.2)
+            # if we know where we are supposed to go, but cannot see it, go in the general direction until we can see it
+            elif self.secure_objective_location is not None and not (self.visible_map.on_map(
+                    self.secure_objective_location) and len(self.path) == 0):
+                if self.visible_map.is_left_of_me(self.secure_objective_location, self.location):
+                    self.movement_target = self.visible_map.find_closest_left_point(
+                        self.secure_objective_location)
+                else:  # secure_objective_location is to the right
+                    self.movement_target = self.visible_map.find_closest_right_point(
+                        self.secure_objective_location)
+                logging.debug("{}: Finding path in direction of secure_objective_location : {}"
+                              .format(self.name, self.movement_target))
+                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                logging.debug("{}: A* path towards secure_objective_location is: {}".format(self.name, self.path))
+            # if we know where we are supposed to go and can see it, find the path
+            elif self.secure_objective_location is not None and \
+                    (self.visible_map.on_map(self.secure_objective_location)) and \
+                    not self.secure_objective_location_route_planned:
+                self.movement_target = self.secure_objective_location
+                logging.debug("{}: Finding path to security perimeter position: {}"
+                              .format(self.name, self.movement_target))
+                self.path = a_star.find_path(self.visible_map, self.location, self.movement_target)
+                logging.debug("{}: A* path to security perimeter position is: {}".format(self.name, self.path))
+                self.secure_objective_location_route_planned = True
+                sleep(0.2)
+            # route planned to security perimeter position, just travel there
+            elif self.secure_objective_location is not None and \
+                    self.secure_objective_location_route_planned and self.location != self.secure_objective_location:
+                logging.debug("{}: Moving to security perimeter position: {}"
+                              .format(self.name, self.secure_objective_location))
+                sleep(0.5)
+            # after in security perimeter position, let squad leader know
+            elif self.secure_objective_location is not None and self.location == self.secure_objective_location:
+                if not self.i_am_squad_leader() and len(self.security_established) == 0:
+                    self.radio.send(in_security_perimeter_position_message(self.name))
+                    self.security_established.add(self.name)
+                    sleep(0.5)
+                elif self.i_am_squad_leader():  # if squad leader, ensure security perimeter is established
+                    warbot_message = self.radio.receive_message()
+                    if warbot_message is not None:
+                        if warbot_message[MESSAGE_TYPE] == IN_SECURITY_PERIMETER_POSITION:
+                            self.security_established.add(warbot_message[NAME])
+                            if len(self.security_established) == len(self.warbot_names):
+                                self.put_sim_message(mission_complete_message())
+                    else:
+                        sleep(0.5)
+                else:
+                    sleep(0.5)
+
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
             self.conduct_election()
+
         elif self.team_state == GET_TEAM_ASSIGNMENT:
             self.get_team_assignment()
+
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
             self.form_squad_column_wedge()
+
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             self.movement_to_objective()
+
         elif self.team_state == OPFOR_CONTACT:
             self.react_to_contact()
+
         elif self.team_state == LIFT_AND_SHIFT_FIRE:
             self.lift_and_shift_fire()
+
+        elif self.team_state == SECURE_OBJECTIVE:
+            self.secure_objective()
+
         else:
             logging.error("do_warbot_tasks: {}: Should not get here!  Bad team state: {}"
                           .format(self.name, self.team_state))
@@ -636,6 +749,13 @@ class Warbot(Agent):
             elif self.fire_direction is not None:
                 self.firing = True
                 return take_turn_fire_message(self.name, self.location, self.fire_direction)
+            else:
+                return take_turn_do_nothing_message(self.name)
+
+        elif self.team_state == SECURE_OBJECTIVE:
+            if len(self.path) > 0:
+                self.moving = True
+                return take_turn_move_message(self.name, self.path.pop(0))
             else:
                 return take_turn_do_nothing_message(self.name)
 

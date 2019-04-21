@@ -151,3 +151,10 @@ def secure_objective_message():
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
+
+def in_security_perimeter_position_message(name):
+    """Message sent to squad leader to establish security perimeter"""
+    message = {MESSAGE_TYPE: IN_SECURITY_PERIMETER_POSITION,
+               NAME: name,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)

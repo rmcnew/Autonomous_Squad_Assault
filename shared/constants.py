@@ -42,12 +42,14 @@ MAX_Y = "max_y"
 MESSAGE_TYPE = "message_type"
 MIN_X = "min_x"
 MIN_Y = "min_y"
+MISSION_COMPLETE = "Mission Complete"
 MOVE = "move"
 NAME = "name"
 ON_TEAM_A = "on_team_a"
 ON_TEAM_B = "on_team_b"
 READY_FOR_MOVEMENT = "ready_for_movement"
 READY_TO_FLANK = "ready_to_flank"
+IN_SECURITY_PERIMETER_POSITION = "in_security_perimeter_position"
 SHOOT = "shoot"
 SHUTDOWN = "shutdown"
 SQUAD_COLUMN_WEDGE_OFFSET = 5
@@ -112,7 +114,18 @@ FLANKING_B2_OFFSET = (0, 2)
 FLANKING_B3_OFFSET = (0, -4)
 FLANKING_B4_OFFSET = (0, 4)
 
-# warbot behaviors
+# secure objective locations
+SECURITY_PERIMETER_1_OFFSET = (0, 3)
+SECURITY_PERIMETER_2_OFFSET = (0, -3)
+SECURITY_PERIMETER_3_OFFSET = (-3, 0)
+SECURITY_PERIMETER_4_OFFSET = (3, 0)
+SECURITY_PERIMETER_5_OFFSET = (-2, 2)
+SECURITY_PERIMETER_6_OFFSET = (2, -2)
+SECURITY_PERIMETER_7_OFFSET = (2, 2)
+SECURITY_PERIMETER_8_OFFSET = (-2, -2)
+SECURITY_PERIMETER_9_OFFSET = (-1, 0)
+SECURITY_PERIMETER_10_OFFSET = (1, 0)
+
 
 # agent actions
 MOVE_TO = "move_to"
@@ -124,7 +137,7 @@ OPFOR_PREFIX = "OPFOR_"
 CIVILIAN_PREFIX = "CIV_"
 
 # opfor generation radius away from objective
-OPFOR_GENERATE_RADIUS = 5  # type: int
+OPFOR_GENERATE_RADIUS = 3  # type: int
 
 # opfor vision around self
 OPFOR_VISION_DISTANCE = 8  # type: int
