@@ -510,9 +510,22 @@ class Warbot(Agent):
         else:
             sleep(0.3)
 
+    def lift_and_shift_fire_team_a(self):
+        pass
+
+    def lift_and_shift_fire_team_b(self):
+        pass
+
     def lift_and_shift_fire(self):
         logging.debug("{}: Lifting and shifting fire".format(self.name))
-        sleep(0.5)
+        if not self.moving:
+            if self.i_am_on_team_a():  # team_a stops firing as team_b sweeps across the objective
+                self.lift_and_shift_fire_team_a()
+
+            else:  # team_b fires and sweeps across the objective
+                self.react_to_contact_team_b()
+        else:
+            sleep(0.3)
 
     def do_warbot_tasks(self):
         if self.team_state == CONDUCT_ELECTION:
@@ -534,20 +547,24 @@ class Warbot(Agent):
     def determine_turn_action(self):
         if self.team_state == CONDUCT_ELECTION:
             return take_turn_do_nothing_message(self.name)
+
         elif self.team_state == GET_TEAM_ASSIGNMENT:
             return take_turn_do_nothing_message(self.name)
+
         elif self.team_state == FORM_SQUAD_COLUMN_WEDGE:
             if len(self.path) > 0:
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
             else:
                 return take_turn_do_nothing_message(self.name)
+
         elif self.team_state == MOVEMENT_TO_OBJECTIVE:
             if len(self.path) > 0:
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
             else:
                 return take_turn_do_nothing_message(self.name)
+
         elif self.team_state == OPFOR_CONTACT:
             if len(self.path) > 0:
                 self.moving = True
@@ -556,6 +573,16 @@ class Warbot(Agent):
                 return take_turn_fire_message(self.name, self.location, self.fire_direction)
             else:
                 return take_turn_do_nothing_message(self.name)
+
+        elif self.team_state == LIFT_AND_SHIFT_FIRE:
+            if len(self.path) > 0:
+                self.moving = True
+                return take_turn_move_message(self.name, self.path.pop(0))
+            elif self.fire_direction is not None:
+                return take_turn_fire_message(self.name, self.location, self.fire_direction)
+            else:
+                return take_turn_do_nothing_message(self.name)
+
         else:
             logging.error("determine_turn_action: {}: Should not get here! Bad team state: {} "
                           .format(self.name, self.team_state))
