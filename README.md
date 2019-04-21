@@ -1,4 +1,4 @@
-# Autonomous_Squad_Assault
+# Autonomous Squad Assault
 MultiAgent Systems Grad School Project
 
 Autonomous robotic military forces will eventually replace human soldiers. Related work shows
