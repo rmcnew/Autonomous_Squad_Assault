@@ -136,3 +136,18 @@ def lift_and_shift_fire_message():
                TIMESTAMP: timestamp()}
     return json.dumps(message)
 
+
+def limit_of_advance_message(name):
+    """Message sent by Team B indicating limit of advance reached"""
+    message = {MESSAGE_TYPE: LIMIT_OF_ADVANCE,
+               NAME: name,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+
+
+def secure_objective_message():
+    """Message sent by squad leader to form security perimeter around objective"""
+    message = {MESSAGE_TYPE: SECURE_OBJECTIVE,
+               TIMESTAMP: timestamp()}
+    return json.dumps(message)
+

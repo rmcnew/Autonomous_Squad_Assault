@@ -18,6 +18,7 @@ from time import sleep
 
 from agent.agent import Agent
 from agent.agent_messages import *
+from shared.functions import distance
 from simulation import a_star
 from simulation.direction import Direction
 from simulation.point import Point
@@ -46,11 +47,16 @@ class Warbot(Agent):
         self.ready_for_movement = set()
         self.ready_to_flank = set()
         self.moving = False
+        self.firing = False
         self.fire_direction = None
         self.flanking_position = None
         self.flanking_position_reached = False
         self.flanking_position_waypoint = None
         self.flanking_position_waypoint_reached = False
+        self.limit_of_advance = None
+        self.limit_of_advance_reached = False
+        self.objective_clearance_direction = None
+        self.last_objective_clearance_action = MOVE
 
     def i_am_squad_leader(self):
         return self.squad_leader is not None and self.squad_leader == self.name
@@ -323,7 +329,8 @@ class Warbot(Agent):
             if self.i_am_squad_leader():
                 # is objective on visible map
                 if self.visible_map.objective_location is not None:  # path find to objective
-                    self.movement_target = self.objective_location
+                    self.movement_target = self.objective_location.\
+                        plus_vector(Direction.SOUTH.to_scaled_vector(WARBOT_VISION_DISTANCE - 4))
                     logging.debug("{}: Objective is on visible map at location: {}.  "
                                   "Starting A* path finding from {} to {}"
                                   .format(self.name, self.visible_map.objective_location,
@@ -392,7 +399,8 @@ class Warbot(Agent):
     def react_to_contact_team_a(self):
         if self.i_am_squad_leader() and self.flanking_position is None:  # squad leader halts and aligns
             logging.debug("{}: Squad leader aligning with objective".format(self.name))
-            self.flanking_position = Point(self.objective_location.x, self.location.y)
+            self.flanking_position = Point(self.objective_location.x,
+                                           self.objective_location.y + WARBOT_VISION_DISTANCE - 2)
             self.movement_target = self.flanking_position
             logging.debug("{}: Notifying Team A of suppressive fire position: {}"
                           .format(self.name, self.flanking_position))
@@ -431,7 +439,12 @@ class Warbot(Agent):
         elif not self.i_am_squad_leader() and self.location == self.flanking_position:
             logging.debug("{}: Suppressive fire".format(self.name))
             self.fire_direction = Direction.NORTH
-            sleep(0.5)
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == LIFT_AND_SHIFT_FIRE:
+                    logging.debug("{}: LIFT_AND_SHIFT_FIRE signal received".format(self.name))
+                    self.team_state = LIFT_AND_SHIFT_FIRE
+            sleep(0.3)
         else:
             sleep(0.3)
 
@@ -496,6 +509,11 @@ class Warbot(Agent):
                     self.ready_to_flank.add(self.name)
                     self.radio.send(ready_to_flank_message(self.name))
                     sleep(0.3)
+                warbot_message = self.radio.receive_message()
+                if warbot_message is not None:
+                    if warbot_message[MESSAGE_TYPE] == LIFT_AND_SHIFT_FIRE:
+                        logging.debug("{}: LIFT_AND_SHIFT_FIRE signal received".format(self.name))
+                        self.team_state = LIFT_AND_SHIFT_FIRE
             else:  # flanking waypoint reached, go to flanking position
                 logging.error("{}: Should not reach here!".format(self.name))
                 sleep(0.5)
@@ -511,10 +529,46 @@ class Warbot(Agent):
             sleep(0.3)
 
     def lift_and_shift_fire_team_a(self):
-        pass
+        self.fire_direction = None
+        sleep(0.5)
 
     def lift_and_shift_fire_team_b(self):
-        pass
+        if self.limit_of_advance is None:
+            half_limit_of_advance = distance(self.visible_map.warbot_locations[self.team_b_leader],
+                                             self.objective_location)
+            if self.visible_map.is_left_of_me(self.objective_location, self.location):
+                advance_vector = Direction.WEST.to_scaled_vector(2 * half_limit_of_advance)
+                self.limit_of_advance = self.location.plus_vector(advance_vector)
+                self.objective_clearance_direction = Direction.WEST
+                logging.debug("{}: limit_of_advance is: {}, objective_clearance_direction is: {}"
+                              .format(self.name, self.limit_of_advance, self.objective_clearance_direction))
+            else:  # objective is to the right
+                advance_vector = Direction.EAST.to_scaled_vector(2 * half_limit_of_advance)
+                self.limit_of_advance = self.location.plus_vector(advance_vector)
+                self.objective_clearance_direction = Direction.EAST
+                logging.debug("{}: limit_of_advance is: {}, objective_clearance_direction is: {}"
+                              .format(self.name, self.limit_of_advance, self.objective_clearance_direction))
+            sleep(0.3)
+        elif not self.limit_of_advance_reached:
+            if self.last_objective_clearance_action == MOVE:
+                self.fire_direction = self.objective_clearance_direction
+                self.last_objective_clearance_action = SHOOT
+            else:
+                self.fire_direction = None
+                next_step = self.location.plus_direction(self.objective_clearance_direction)
+                self.path.append(next_step)
+                self.last_objective_clearance_action = MOVE
+                if next_step == self.limit_of_advance:
+                    self.radio.send(limit_of_advance_message(self.name))
+                    self.limit_of_advance_reached = True
+            sleep(0.2)
+        else:  # wait for squad leader to call "secure objective"
+            warbot_message = self.radio.receive_message()
+            if warbot_message is not None:
+                if warbot_message[MESSAGE_TYPE] == SECURE_OBJECTIVE:
+                    self.team_state = SECURE_OBJECTIVE
+            else:
+                sleep(0.3)
 
     def lift_and_shift_fire(self):
         logging.debug("{}: Lifting and shifting fire".format(self.name))
@@ -523,7 +577,7 @@ class Warbot(Agent):
                 self.lift_and_shift_fire_team_a()
 
             else:  # team_b fires and sweeps across the objective
-                self.react_to_contact_team_b()
+                self.lift_and_shift_fire_team_b()
         else:
             sleep(0.3)
 
@@ -570,6 +624,7 @@ class Warbot(Agent):
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
             elif self.fire_direction is not None:
+                self.firing = True
                 return take_turn_fire_message(self.name, self.location, self.fire_direction)
             else:
                 return take_turn_do_nothing_message(self.name)
@@ -579,6 +634,7 @@ class Warbot(Agent):
                 self.moving = True
                 return take_turn_move_message(self.name, self.path.pop(0))
             elif self.fire_direction is not None:
+                self.firing = True
                 return take_turn_fire_message(self.name, self.location, self.fire_direction)
             else:
                 return take_turn_do_nothing_message(self.name)
@@ -599,6 +655,8 @@ class Warbot(Agent):
                 self.visible_map.scan()
                 if self.moving:
                     self.moving = False
+                if self.firing:
+                    self.firing = False
                 turn_action = self.determine_turn_action()
                 # logging.debug("{}: I see {} warbots nearby".format(self.name, len(self.visible_map.warbot_locations)))
                 logging.debug("{} taking action: {}".format(self.name, turn_action))
