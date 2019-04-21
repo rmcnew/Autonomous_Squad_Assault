@@ -166,8 +166,8 @@ class AutoAssault:
     def show_game_over_screen(self):
         """Draw simulation ended message"""
         game_over_font = pygame.font.Font(SANS_FONT, 150)
-        game_surf = game_over_font.render("Mission", True, Colors.WHITE.value)
-        over_surf = game_over_font.render('Complete', True, Colors.WHITE.value)
+        game_surf = game_over_font.render("Objective", True, Colors.WHITE.value)
+        over_surf = game_over_font.render("Secured", True, Colors.WHITE.value)
         game_rect = game_surf.get_rect()
         over_rect = over_surf.get_rect()
         game_rect.midtop = (WINDOW_WIDTH / 2, 10)
@@ -295,18 +295,20 @@ class AutoAssault:
             logging.debug("Waiting on turn responses . . .")
             while len(messages_received) < live_process_count:
                 message = json.loads(to_sim_queue.get())
-                if message[MESSAGE_TYPE] == MISSION_COMPLETE:
+                if message[MESSAGE_TYPE] == TAKE_TURN:
+                    agents_left.remove(message[FROM])
+                    messages_received.append(message)
+                    logging.debug("Received {} turn responses out of {} expected.  Still need response from: {}"
+                                  .format(len(messages_received), live_process_count, agents_left))
+                elif message[MESSAGE_TYPE] == MISSION_COMPLETE:
+                    self.mission_complete = True
                     break
-                agents_left.remove(message[FROM])
-                messages_received.append(message)
-                logging.debug("Received {} turn responses out of {} expected.  Still need response from: {}"
-                              .format(len(messages_received), live_process_count, agents_left))
-            logging.debug("Done waiting on turn responses.  Updating mission_map")
-            # update mission_map
-            self.update_mission_map(messages_received)
             if self.mission_complete:
                 self.show_game_over_screen()
             else:
+                logging.debug("Done waiting on turn responses.  Updating mission_map")
+                # update mission_map
+                self.update_mission_map(messages_received)
                 # update warbot movement
                 self.update_warbots()
         # after the mission is complete or quit is indicated, clean-up and shutdown
@@ -321,7 +323,7 @@ def parse_arguments():
                         help='number of rifle warbots (2 to 10)')
     parser.add_argument('-e', default=6, type=int, choices=range(1, 11),
                         help='number of enemies (1 to 10)')
-    parser.add_argument('-c', default=5, type=int, choices=range(0, 21),
+    parser.add_argument('-c', default=0, type=int, choices=range(0, 21),
                         help='number of civilians (0 to 20)')
     return parser.parse_args()
 

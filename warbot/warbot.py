@@ -37,7 +37,7 @@ class Warbot(Agent):
         self.objective_location = objective_location
         self.rally_point_location = rally_point_location
         self.run_simulation = True
-        self.warbot_names = []
+        self.warbot_names = set()
         self.squad_leader = None  # squad leader is also team_a leader
         self.team_a = []
         self.team_b_leader = None
@@ -126,7 +126,7 @@ class Warbot(Agent):
                         logging.info("{}: {} beats {}".format(self.name, self.name, warbot_message[NAME]))
                         self.radio.send(election_compare_message(self.name, warbot_message[NAME]))
                         # save the warbot's name for team assignment (assuming election win)
-                        self.warbot_names.append(warbot_message[NAME])
+                        self.warbot_names.add(warbot_message[NAME])
                     else:  # they won the comparison
                         # logging.info("{}: {} loses to {}".format(self.name, self.name, warbot_message[NAME]))
                         i_lost = True
@@ -669,7 +669,8 @@ class Warbot(Agent):
                 sleep(0.5)
             # after in security perimeter position, let squad leader know
             elif self.secure_objective_location is not None and self.location == self.secure_objective_location:
-                if not self.i_am_squad_leader() and len(self.security_established) == 0:
+                if not self.i_am_squad_leader() and (len(self.security_established) == 0):
+                    logging.debug("{}: Sending in security perimeter position message to squad leader".format(self.name))
                     self.radio.send(in_security_perimeter_position_message(self.name))
                     self.security_established.add(self.name)
                     sleep(0.5)
@@ -678,10 +679,14 @@ class Warbot(Agent):
                     if warbot_message is not None:
                         if warbot_message[MESSAGE_TYPE] == IN_SECURITY_PERIMETER_POSITION:
                             self.security_established.add(warbot_message[NAME])
+                            logging.debug("{}: Received in security perimeter position message from {}"
+                                          .format(self.name, warbot_message[NAME]))
                             if len(self.security_established) == len(self.warbot_names):
+                                logging.debug("{}: Sending mission complete message!".format(self.name))
                                 self.put_sim_message(mission_complete_message())
+                                sleep(0.5)
                     else:
-                        sleep(0.5)
+                        sleep(0.2)
                 else:
                     sleep(0.5)
 

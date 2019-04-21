@@ -68,7 +68,7 @@ You can specify how many civilians you want in the simulation using the -c comma
 
 python3 auto_assault.py -c Y
 
-where Y is the desired number of civilians.  You can specify between 0 and 20 civilians.  The default is 5.
+where Y is the desired number of civilians.  You can specify between 0 and 20 civilians.  The default is 0.
 
 
 Multiple command line flags can be combined together to tailor the simulation to your desired parameters
