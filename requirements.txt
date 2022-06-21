@@ -1,5 +1,5 @@
 Cython==0.29.6
 noise==1.2.2
-numpy==1.16.0
+numpy==1.22.0
 pkg-resources==0.0.0
 pygame==1.9.4
